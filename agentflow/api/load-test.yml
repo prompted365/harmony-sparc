@@ -1,0 +1,176 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # Warm-up phase
+    - duration: 30
+      arrivalRate: 10
+      name: "Warm-up"
+    
+    # Ramp-up phase
+    - duration: 60
+      arrivalRate: 100
+      rampTo: 500
+      name: "Ramp-up to 500 RPS"
+    
+    # Sustained high load phase
+    - duration: 120
+      arrivalRate: 1000
+      name: "Sustained 1000 RPS"
+    
+    # Peak load phase
+    - duration: 60
+      arrivalRate: 1500
+      name: "Peak 1500 RPS"
+    
+    # Cool-down phase
+    - duration: 30
+      arrivalRate: 100
+      name: "Cool-down"
+
+  http:
+    timeout: 10
+    pool: 50
+    extendedMetrics: true
+    
+  payload:
+    path: "payload.csv"
+    fields:
+      - "walletAddress"
+      - "amount"
+      - "token"
+
+  plugins:
+    ensure: {}
+    metrics-by-endpoint: {}
+    hdrhistogram: {}
+
+scenarios:
+  - name: "Health Check Load Test"
+    weight: 30
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+            - hasProperty: "data.status"
+            - contentType: "application/json"
+          capture:
+            - json: "$.data.responseTime"
+              as: "responseTime"
+      - think: 1
+
+  - name: "Detailed Health Check"
+    weight: 10
+    flow:
+      - get:
+          url: "/health/detailed"
+          expect:
+            - statusCode: 200
+            - hasProperty: "data.services"
+          capture:
+            - json: "$.data.uptime"
+              as: "uptime"
+      - think: 2
+
+  - name: "Financial API Load Test"
+    weight: 40
+    flow:
+      - get:
+          url: "/api/financial/tokens"
+          expect:
+            - statusCode: 200
+            - hasProperty: "data"
+      - think: 1
+      - get:
+          url: "/api/financial/wallets"
+          expect:
+            - statusCode: 200
+      - think: 1
+
+  - name: "Wallet Operations"
+    weight: 15
+    flow:
+      - post:
+          url: "/api/financial/wallets"
+          json:
+            name: "Test Wallet {{ $randomString() }}"
+          expect:
+            - statusCode: 201
+          capture:
+            - json: "$.data.address"
+              as: "walletAddress"
+      - think: 1
+      - get:
+          url: "/api/financial/wallets/{{ walletAddress }}"
+          expect:
+            - statusCode: 200
+      - think: 1
+
+  - name: "Payment Processing"
+    weight: 5
+    flow:
+      - post:
+          url: "/api/financial/wallets"
+          json:
+            name: "Payment Test Wallet"
+          expect:
+            - statusCode: 201
+          capture:
+            - json: "$.data.address"
+              as: "walletAddress"
+      - think: 1
+      - post:
+          url: "/api/financial/wallets/{{ walletAddress }}/send"
+          json:
+            amount: "{{ $randomNumber(0.1, 10) }}"
+            token: "{{ $randomString(3) }}"
+            recipient: "0x{{ $randomString(40) }}"
+            urgency: "normal"
+          expect:
+            - statusCode: 200
+          capture:
+            - json: "$.data.id"
+              as: "transactionId"
+      - think: 2
+
+ensure:
+  # Performance requirements
+  maxErrorRate: 5  # Max 5% error rate
+  maxResponseTime: 100  # Max 100ms response time
+  minThruput: 1000  # Min 1000 requests per second
+
+  # Individual endpoint requirements
+  thresholds:
+    # Health check must be very fast
+    - http.response_time:
+        p95: 50
+        p99: 100
+      on: "Health Check Load Test"
+    
+    # Financial API should be fast
+    - http.response_time:
+        p95: 75
+        p99: 150
+      on: "Financial API Load Test"
+    
+    # Payment processing can be slightly slower
+    - http.response_time:
+        p95: 100
+        p99: 200
+      on: "Payment Processing"
+
+  # Overall system requirements
+  - http.response_time:
+      p50: 25
+      p95: 75
+      p99: 100
+  
+  - http.request_rate:
+      min: 1000
+  
+  - http.codes.200:
+      min: 95  # 95% success rate
+
+  # Memory and resource checks
+  - plugins.ensure.maxRss: 512  # Max 512MB RAM
+  - plugins.ensure.maxHeap: 256  # Max 256MB heap

@@ -1,0 +1,13 @@
+{
+  "objective": "Please design an agentic platform for business workflows and finance using. Include robust crypto and economical systems for humans and agents. Use rapid predictions and custom machine learning and ai models to facilitate profitability. Here are the details for a communication protocol: QUDAG.md. You also have many other tools at your disposal in this project.",
+  "strategy": "development",
+  "mode": "centralized",
+  "maxAgents": 10,
+  "timeout": 30,
+  "parallel": true,
+  "monitor": true,
+  "output": "json",
+  "outputDir": "./reports",
+  "timestamp": "2025-07-06T04:53:32.875Z",
+  "id": "swarm-development-centralized-1751777612876"
+}

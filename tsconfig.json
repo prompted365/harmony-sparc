@@ -1,54 +1,58 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "allowJs": true,
-    "checkJs": false,
+    "lib": ["ES2022"],
+    "module": "commonjs",
+    "rootDir": "./",
     "outDir": "./dist",
-    "rootDir": "./src",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
     "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "incremental": true,
+    "removeComments": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
     "strictFunctionTypes": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "noImplicitOverride": true,
-    "exactOptionalPropertyTypes": false,
-    "noPropertyAccessFromIndexSignature": false,
-    "noUncheckedIndexedAccess": false,
+    "allowJs": true,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "verbatimModuleSyntax": true,
-    "skipLibCheck": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "lib": ["ES2022"],
-    "moduleDetection": "force",
-    "types": ["node", "jest"],
-    "typeRoots": ["./node_modules/@types", "./src/types"]
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["agentflow/*"],
+      "@test/*": ["test/*"],
+      "@fixtures/*": ["test/fixtures/*"],
+      "@utils/*": ["test/utils/*"]
+    },
+    "types": ["jest", "node"]
   },
   "include": [
-    "src/**/*.ts"
+    "agentflow/**/*",
+    "test/**/*",
+    "contracts/**/*",
+    "scripts/**/*",
+    "src/**/*"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "**/*.test.ts",
-    "**/*.spec.ts",
-    "tests/**/*",
-    "deno_modules",
-    "bin",
-    "src/terminal/vscode-bridge.ts"
+    "coverage",
+    "artifacts",
+    "cache",
+    "typechain-types"
   ],
   "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
+    "require": ["tsconfig-paths/register"]
   }
 }

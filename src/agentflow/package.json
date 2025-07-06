@@ -1,0 +1,57 @@
+{
+  "name": "@agentflow/core",
+  "version": "1.0.0",
+  "description": "AgentFlow - Agentic platform for business workflows and finance with quantum-resistant security",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "clean": "rm -rf dist coverage",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "agentflow",
+    "quantum-resistant",
+    "blockchain",
+    "defi",
+    "autonomous-agents",
+    "workflow-engine"
+  ],
+  "author": "AgentFlow Team",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^20.0.0",
+    "better-sqlite3": "^9.0.0",
+    "ethers": "^6.0.0",
+    "eventemitter3": "^5.0.0",
+    "uuid": "^9.0.0",
+    "winston": "^3.11.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/uuid": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.50.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.0.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
+}

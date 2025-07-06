@@ -1,59 +1,41 @@
-export default {
-  preset: 'ts-jest/presets/default-esm',
-  extensionsToTreatAsEsm: ['.ts'],
+module.exports = {
+  preset: 'ts-jest',
   testEnvironment: 'node',
-  roots: ['<rootDir>/src', '<rootDir>/tests'],
-  testMatch: [
-    '<rootDir>/tests/**/*.test.ts',
-    '<rootDir>/tests/**/*.test.js',
-    '<rootDir>/tests/**/*.spec.ts',
-    '<rootDir>/tests/**/*.spec.js',
-    '<rootDir>/src/**/*.test.ts',
-    '<rootDir>/src/**/*.test.js',
-    '<rootDir>/src/**/*.spec.ts',
-    '<rootDir>/src/**/*.spec.js'
-  ],
+  roots: ['<rootDir>/agentflow', '<rootDir>/tests', '<rootDir>/src'],
+  testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
-    '^.+\\.ts$': ['ts-jest', {
-      useESM: true,
-      tsconfig: {
-        module: 'es2022',
-        moduleResolution: 'node',
-        allowSyntheticDefaultImports: true,
-        esModuleInterop: true,
-        target: 'es2022'
-      }
-    }],
-    '^.+\\.js$': ['babel-jest', {
-      presets: [['@babel/preset-env', { modules: false }]]
-    }]
+    '^.+\\.ts$': 'ts-jest',
   },
-  moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1',
-    '^~/(.*)$': '<rootDir>/src/$1',
-    '^@/(.*)$': '<rootDir>/src/$1'
-  },
-  modulePathIgnorePatterns: [
-    '<rootDir>/dist/',
-    '<rootDir>/bin/',
-    '<rootDir>/node_modules/'
-  ],
-  transformIgnorePatterns: [
-    'node_modules/(?!(chalk|ora|inquirer|nanoid|fs-extra|ansi-styles|ruv-swarm)/)'
-  ],
-  resolver: undefined,
   collectCoverageFrom: [
+    'agentflow/**/*.ts',
+    '!agentflow/**/*.d.ts',
+    '!agentflow/**/*.interface.ts',
+    '!agentflow/**/*.mock.ts',
+    '!agentflow/index.ts',
     'src/**/*.ts',
-    'src/**/*.js',
     '!src/**/*.d.ts',
-    '!src/**/*.test.ts',
-    '!src/**/*.test.js',
-    '!src/**/*.spec.ts',
-    '!src/**/*.spec.js'
+    '!src/**/*.interface.ts',
+    '!src/**/*.mock.ts',
+    '!src/index.ts',
   ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+  },
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/agentflow/$1',
+    '^@adapters/(.*)$': '<rootDir>/agentflow/adapters/$1',
+    '^@core/(.*)$': '<rootDir>/agentflow/core/$1',
+    '^@api/(.*)$': '<rootDir>/agentflow/api/$1',
+    '^@monitoring/(.*)$': '<rootDir>/agentflow/monitoring/$1',
+  },
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   testTimeout: 30000,
-  verbose: true
+  verbose: true,
 };

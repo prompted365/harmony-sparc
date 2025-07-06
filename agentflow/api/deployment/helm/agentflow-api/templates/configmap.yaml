@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "agentflow-api.configMapName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentflow-api.labels" . | nindent 4 }}
+    component: config
+data:
+  {{- range $key, $value := .Values.env }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+---
+{{- if .Values.nginx.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "agentflow-api.nginxConfigMapName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentflow-api.labels" . | nindent 4 }}
+    component: nginx
+data:
+  nginx.conf: |
+    events {
+        worker_connections 1024;
+    }
+    
+    http {
+        upstream agentflow-api {
+            server 127.0.0.1:3000;
+        }
+        
+        server {
+            listen 80;
+            server_name _;
+            
+            location /health {
+                proxy_pass http://agentflow-api;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                access_log off;
+            }
+            
+            location / {
+                proxy_pass http://agentflow-api;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+                proxy_timeout 30s;
+                proxy_connect_timeout 5s;
+                proxy_send_timeout 30s;
+                proxy_read_timeout 30s;
+            }
+        }
+    }
+{{- end }}

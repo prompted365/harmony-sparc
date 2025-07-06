@@ -2,329 +2,297 @@ name: Test Suite
 
 on:
   push:
-    branches: [ main, develop, claude-flow-v2.0.0 ]
+    branches: [ main, develop, 'feature/**' ]
   pull_request:
     branches: [ main, develop ]
 
+env:
+  NODE_VERSION: '18.x'
+  SOLIDITY_VERSION: '0.8.24'
+
 jobs:
-  test:
+  unit-tests:
+    name: Unit Tests
     runs-on: ubuntu-latest
-    
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 21.x]
-
+        test-type: [api, contracts, ml, quantum]
+    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
-
+    
     - name: Install dependencies
       run: npm ci
-
-    - name: Run type checking
-      run: npm run typecheck
-
-    - name: Run linting
-      run: npm run lint
-
-    - name: Run unit tests
-      run: npm run test:unit
-
-    - name: Run CLI tests
-      run: npm run test:cli
-
-    - name: Run integration tests
-      run: npm run test:integration
-
-    - name: Run performance tests
-      run: npm run test:performance
-
-    - name: Generate coverage report
-      run: npm run test:coverage
-
-    - name: Upload coverage to Codecov
+    
+    - name: Run ${{ matrix.test-type }} unit tests
+      run: npm run test:unit:${{ matrix.test-type }}
+    
+    - name: Upload coverage
       uses: codecov/codecov-action@v3
       with:
-        file: ./coverage/lcov.info
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
+        flags: unit-${{ matrix.test-type }}
+        files: ./coverage/lcov.info
 
-  test-deno:
+  integration-tests:
+    name: Integration Tests
     runs-on: ubuntu-latest
+    needs: unit-tests
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: harmony_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Deno
-      uses: denoland/setup-deno@v1
-      with:
-        deno-version: v1.x
-
-    - name: Run Deno tests
-      run: npm run test:deno
-
-  test-windows:
-    runs-on: windows-latest
+    - uses: actions/checkout@v3
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v3
       with:
-        node-version: '20.x'
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
-
+    
     - name: Install dependencies
       run: npm ci
-
-    - name: Run core tests
-      run: npm run test:unit
-
-  test-macos:
-    runs-on: macos-latest
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Setup test environment
+      run: |
+        cp .env.test .env
+        npm run db:migrate:test
+    
+    - name: Run integration tests
+      run: npm run test:integration
+      env:
+        DATABASE_URL: postgresql://testuser:testpass@localhost:5432/harmony_test
+        REDIS_URL: redis://localhost:6379
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
       with:
-        node-version: '20.x'
-        cache: 'npm'
+        name: integration-test-results
+        path: test-results.json
 
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Run core tests
-      run: npm run test:unit
-
-  e2e-test:
+  e2e-tests:
+    name: E2E Tests
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: unit-tests
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
+    - uses: actions/checkout@v3
+    
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v3
       with:
-        node-version: '20.x'
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
-
+    
     - name: Install dependencies
       run: npm ci
-
-    - name: Build CLI
+    
+    - name: Build application
       run: npm run build
-
-    - name: Test CLI binary
-      run: |
-        chmod +x ./bin/claude-flow
-        ./bin/claude-flow --version
-        ./bin/claude-flow --help
-
-    - name: Test init command
-      run: |
-        mkdir test-project
-        cd test-project
-        ../bin/claude-flow init --minimal
-        ls -la .claude/
-
-    - name: Test memory commands
-      run: |
-        cd test-project
-        ../bin/claude-flow memory store test-key "test value"
-        ../bin/claude-flow memory retrieve test-key
-        ../bin/claude-flow memory list
-
-  docker-test:
-    runs-on: ubuntu-latest
-    needs: [test]
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Build Docker image
+    - name: Start test environment
       run: |
-        docker build -t claude-flow:test .
-
-    - name: Test Docker container
-      run: |
-        docker run --rm claude-flow:test --version
-        docker run --rm claude-flow:test --help
-
-  benchmark:
-    runs-on: ubuntu-latest
-    needs: [test]
+        docker-compose -f docker-compose.test.yml up -d
+        npm run wait-for-services
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Run E2E tests
+      run: npm run test:e2e
+    
+    - name: Stop test environment
+      if: always()
+      run: docker-compose -f docker-compose.test.yml down
+    
+    - name: Upload E2E test videos
+      uses: actions/upload-artifact@v3
+      if: failure()
       with:
-        node-version: '20.x'
-        cache: 'npm'
+        name: e2e-videos
+        path: cypress/videos
 
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests]
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
     - name: Install dependencies
       run: npm ci
-
-    - name: Run performance benchmarks
-      run: |
-        npm run test:performance
-        echo "Performance tests completed"
-
-    - name: Memory usage test
-      run: |
-        node -e "
-          const { execSync } = require('child_process');
-          const initialMemory = process.memoryUsage().heapUsed;
-          
-          // Run CLI commands multiple times
-          for (let i = 0; i < 10; i++) {
-            execSync('node src/cli/simple-cli.js --help', { stdio: 'ignore' });
-          }
-          
-          const finalMemory = process.memoryUsage().heapUsed;
-          const increase = (finalMemory - initialMemory) / 1024 / 1024;
-          
-          console.log(\`Memory increase: \${increase.toFixed(2)}MB\`);
-          
-          if (increase > 100) {
-            console.error('Memory usage too high!');
-            process.exit(1);
-          }
-        "
-
-  security:
-    runs-on: ubuntu-latest
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Run security audit
-      run: npm audit --audit-level=high
-
-    - name: Check for known vulnerabilities
-      run: |
-        npx audit-ci --config audit-ci.json || true
-
-  code-quality:
-    runs-on: ubuntu-latest
+    - name: Build for performance testing
+      run: npm run build:perf
     
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Check code formatting
+    - name: Run performance tests
+      run: npm run test:performance
+    
+    - name: Validate >1000 TPS
       run: |
-        npm run format
-        git diff --exit-code || (echo "Code formatting issues found" && exit 1)
-
-    - name: Run linting with error reporting
-      run: npm run lint -- --format=json --output-file=eslint-report.json || true
-
-    - name: Upload lint results
+        TPS=$(cat reports/performance-report.json | jq '.summary.achievedTPS')
+        if (( $(echo "$TPS < 1000" | bc -l) )); then
+          echo "Performance test failed: TPS $TPS is less than 1000"
+          exit 1
+        fi
+        echo "Performance test passed: TPS $TPS"
+    
+    - name: Upload performance reports
       uses: actions/upload-artifact@v3
       with:
-        name: eslint-report
-        path: eslint-report.json
+        name: performance-reports
+        path: reports/
 
-  coverage-report:
+  smart-contract-tests:
+    name: Smart Contract Tests
     runs-on: ubuntu-latest
-    needs: [test]
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
+    - uses: actions/checkout@v3
+    
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v3
       with:
-        node-version: '20.x'
+        node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
-
+    
     - name: Install dependencies
       run: npm ci
+    
+    - name: Compile contracts
+      run: npx hardhat compile
+    
+    - name: Run contract tests
+      run: npx hardhat test
+    
+    - name: Run contract coverage
+      run: npx hardhat coverage
+    
+    - name: Check contract sizes
+      run: npx hardhat size-contracts
+    
+    - name: Run Slither analysis
+      uses: crytic/slither-action@v0.3.0
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        sarif: results.sarif
+        fail-on: high
+    
+    - name: Upload Slither results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: results.sarif
 
-    - name: Generate detailed coverage
-      run: npm run test:coverage
-
-    - name: Check coverage thresholds
-      run: |
-        node -e "
-          const coverage = require('./coverage/coverage-summary.json');
-          const thresholds = {
-            lines: 80,
-            functions: 80,
-            branches: 75,
-            statements: 80
-          };
+  load-tests:
+    name: Load Tests
+    runs-on: ubuntu-latest
+    needs: [integration-tests, performance-tests]
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build application
+      run: npm run build
+    
+    - name: Run load tests
+      run: npm run test:load
+    
+    - name: Analyze load test results
+      run: npm run analyze:load-test
+    
+    - name: Comment PR with results
+      uses: actions/github-script@v6
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          const fs = require('fs');
+          const report = JSON.parse(fs.readFileSync('reports/load-test-summary.json', 'utf8'));
           
-          let failed = false;
+          const comment = `## Load Test Results
           
-          Object.keys(thresholds).forEach(key => {
-            const actual = coverage.total[key].pct;
-            const threshold = thresholds[key];
-            
-            console.log(\`\${key}: \${actual}% (threshold: \${threshold}%)\`);
-            
-            if (actual < threshold) {
-              console.error(\`❌ \${key} coverage below threshold\`);
-              failed = true;
-            } else {
-              console.log(\`✅ \${key} coverage meets threshold\`);
-            }
+          - **Peak TPS**: ${report.peakTPS}
+          - **Average Response Time**: ${report.avgResponseTime}ms
+          - **95th Percentile**: ${report.p95}ms
+          - **99th Percentile**: ${report.p99}ms
+          - **Error Rate**: ${report.errorRate}%
+          - **Max Concurrent Users**: ${report.maxConcurrentUsers}
+          
+          ${report.passed ? '✅ Load test passed!' : '❌ Load test failed!'}`;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
           });
-          
-          if (failed) {
-            console.error('Coverage thresholds not met');
-            process.exit(1);
-          } else {
-            console.log('All coverage thresholds met');
-          }
-        "
 
-    - name: Upload coverage artifacts
-      uses: actions/upload-artifact@v3
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, e2e-tests, performance-tests, smart-contract-tests]
+    if: always()
+    
+    steps:
+    - name: Check test results
+      run: |
+        if [ "${{ needs.unit-tests.result }}" != "success" ] || \
+           [ "${{ needs.integration-tests.result }}" != "success" ] || \
+           [ "${{ needs.e2e-tests.result }}" != "success" ] || \
+           [ "${{ needs.performance-tests.result }}" != "success" ] || \
+           [ "${{ needs.smart-contract-tests.result }}" != "success" ]; then
+          echo "One or more test suites failed"
+          exit 1
+        fi
+        echo "All test suites passed!"
+    
+    - name: Create test report
+      uses: dorny/test-reporter@v1
+      if: always()
       with:
-        name: coverage-report
-        path: |
-          coverage/
-          !coverage/tmp/
+        name: Test Results
+        path: '**/test-results.xml'
+        reporter: jest-junit

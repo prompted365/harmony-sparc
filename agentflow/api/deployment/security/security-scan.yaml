@@ -1,0 +1,230 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: agentflow-security-scan
+  namespace: agentflow
+  labels:
+    app: agentflow-api
+    component: security-scan
+spec:
+  schedule: "0 2 * * *"  # Run daily at 2 AM
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: agentflow-api
+            component: security-scan
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: trivy-scan
+            image: aquasec/trivy:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting security scan..."
+              
+              # Scan the AgentFlow API image
+              trivy image --exit-code 1 --severity HIGH,CRITICAL \
+                --format json --output /tmp/scan-results.json \
+                ghcr.io/agentflow/api:latest
+              
+              # If scan passes, create a report
+              trivy image --format table \
+                ghcr.io/agentflow/api:latest > /tmp/scan-report.txt
+              
+              echo "Security scan completed"
+              
+              # Send results to monitoring system
+              curl -X POST https://monitoring.agentflow.ai/security-scan \
+                -H "Content-Type: application/json" \
+                -d @/tmp/scan-results.json || true
+            
+            volumeMounts:
+            - name: scan-results
+              mountPath: /tmp
+            
+            resources:
+              requests:
+                cpu: 100m
+                memory: 256Mi
+              limits:
+                cpu: 500m
+                memory: 1Gi
+            
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
+              runAsUser: 1000
+              runAsGroup: 1000
+              capabilities:
+                drop:
+                - ALL
+          
+          - name: dependency-check
+            image: owasp/dependency-check:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting dependency check..."
+              
+              # Download and scan package.json
+              curl -o /tmp/package.json \
+                https://raw.githubusercontent.com/agentflow/api/main/package.json
+              
+              dependency-check.sh \
+                --project "AgentFlow API" \
+                --scan /tmp/package.json \
+                --format JSON \
+                --out /tmp/dependency-report.json
+              
+              echo "Dependency check completed"
+            
+            volumeMounts:
+            - name: scan-results
+              mountPath: /tmp
+            
+            resources:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                cpu: 500m
+                memory: 1Gi
+            
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
+              runAsUser: 1000
+              runAsGroup: 1000
+              capabilities:
+                drop:
+                - ALL
+          
+          volumes:
+          - name: scan-results
+            emptyDir: {}
+          
+          securityContext:
+            fsGroup: 1000
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: security-scan-config
+  namespace: agentflow
+  labels:
+    app: agentflow-api
+    component: security-scan
+data:
+  scan-config.yaml: |
+    # Trivy configuration
+    trivy:
+      severity: ["HIGH", "CRITICAL"]
+      ignore-unfixed: true
+      timeout: "10m"
+      
+    # OWASP Dependency Check configuration
+    dependency-check:
+      suppression-file: "suppressions.xml"
+      fail-on-cvss: 7.0
+      
+    # Custom security rules
+    custom-rules:
+      - name: "No root user"
+        description: "Container should not run as root"
+        rule: "spec.securityContext.runAsUser != 0"
+      
+      - name: "Read-only filesystem"
+        description: "Container should have read-only root filesystem"
+        rule: "spec.securityContext.readOnlyRootFilesystem == true"
+      
+      - name: "No privileged containers"
+        description: "Container should not be privileged"
+        rule: "spec.securityContext.privileged != true"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: security-scan-webhook
+  namespace: agentflow
+  labels:
+    app: agentflow-api
+    component: security-scan
+spec:
+  selector:
+    app: agentflow-api
+    component: security-scan
+  ports:
+  - name: webhook
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: security-scan-webhook
+  namespace: agentflow
+  labels:
+    app: agentflow-api
+    component: security-scan
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: agentflow-api
+      component: security-scan
+  template:
+    metadata:
+      labels:
+        app: agentflow-api
+        component: security-scan
+    spec:
+      containers:
+      - name: webhook
+        image: alpine:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          # Simple webhook server to receive scan results
+          apk add --no-cache curl
+          
+          while true; do
+            echo "Security scan webhook running..."
+            
+            # Listen for webhook requests (simplified)
+            nc -l -p 8080 -e echo "HTTP/1.1 200 OK\r\n\r\nReceived"
+          done
+        
+        ports:
+        - containerPort: 8080
+          name: webhook
+        
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          capabilities:
+            drop:
+            - ALL

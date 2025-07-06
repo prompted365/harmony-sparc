@@ -1,0 +1,60 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Harmony SPARC API
+  - job_name: 'harmony-api'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['harmony-api:9090']
+    metrics_path: '/metrics'
+    scheme: 'http'
+
+  # NGINX
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:80']
+    metrics_path: '/nginx_status'
+    scheme: 'http'
+
+  # PostgreSQL
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres:5432']
+    params:
+      module: [default]
+
+  # Redis
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+
+  # Node.js application metrics
+  - job_name: 'node-app'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['harmony-api:3000']
+    metrics_path: '/metrics'
+
+  # Blockchain node metrics
+  - job_name: 'blockchain'
+    static_configs:
+      - targets: ['blockchain-node:8545']
+    metrics_path: '/metrics'
+    scheme: 'http'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          # - alertmanager:9093

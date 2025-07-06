@@ -1,0 +1,164 @@
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  NODE_VERSION: "20"
+  REGISTRY: $CI_REGISTRY
+  IMAGE_NAME: agentflow/api
+  HELM_VERSION: "3.12.0"
+  KUBERNETES_VERSION: "1.28"
+
+stages:
+  - security
+  - test
+  - build
+  - deploy-staging
+  - deploy-production
+  - cleanup
+
+# Security and Quality Checks
+security:
+  stage: security
+  image: aquasec/trivy:latest
+  script:
+    - trivy filesystem --format template --template "@contrib/sarif.tpl" -o trivy-results.sarif src/agentflow/api
+    - trivy filesystem --exit-code 1 --severity HIGH,CRITICAL src/agentflow/api
+  artifacts:
+    reports:
+      sast: trivy-results.sarif
+    expire_in: 1 week
+  only:
+    - main
+    - develop
+    - merge_requests
+
+dependency-check:
+  stage: security
+  image: node:$NODE_VERSION-alpine
+  script:
+    - cd src/agentflow/api
+    - npm ci
+    - npm audit --audit-level=moderate
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# Testing
+test:
+  stage: test
+  image: node:$NODE_VERSION-alpine
+  services:
+    - redis:7-alpine
+  variables:
+    REDIS_URL: redis://redis:6379
+  script:
+    - cd src/agentflow/api
+    - npm ci
+    - npm run lint
+    - npm run test:coverage
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: src/agentflow/api/coverage/cobertura-coverage.xml
+      junit: src/agentflow/api/coverage/junit.xml
+    expire_in: 1 week
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# Build Docker Image
+build:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  before_script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  script:
+    - cd src/agentflow/api
+    - |
+      docker build \
+        --build-arg BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
+        --build-arg VCS_REF=$CI_COMMIT_SHA \
+        --build-arg VERSION=$CI_COMMIT_REF_NAME \
+        --tag $CI_REGISTRY_IMAGE/agentflow-api:$CI_COMMIT_SHA \
+        --tag $CI_REGISTRY_IMAGE/agentflow-api:latest \
+        .
+    - docker push $CI_REGISTRY_IMAGE/agentflow-api:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE/agentflow-api:latest
+  only:
+    - main
+    - develop
+
+# Deploy to Staging
+deploy-staging:
+  stage: deploy-staging
+  image: alpine/helm:$HELM_VERSION
+  environment:
+    name: staging
+    url: https://api-staging.agentflow.ai
+  before_script:
+    - apk add --no-cache curl
+    - curl -LO "https://dl.k8s.io/release/v$KUBERNETES_VERSION/bin/linux/amd64/kubectl"
+    - chmod +x kubectl
+    - mv kubectl /usr/local/bin/
+    - mkdir -p ~/.kube
+    - echo "$KUBE_CONFIG_STAGING" | base64 -d > ~/.kube/config
+  script:
+    - |
+      helm upgrade --install agentflow-api-staging \
+        deployment/helm/agentflow-api \
+        --namespace agentflow-staging \
+        --create-namespace \
+        --values deployment/helm/agentflow-api/values-staging.yaml \
+        --set image.tag=$CI_COMMIT_SHA \
+        --set ingress.hosts[0].host=api-staging.agentflow.ai \
+        --wait --timeout=600s
+    - kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=agentflow-api -n agentflow-staging --timeout=300s
+    - kubectl run --rm -i --restart=Never smoke-test --image=curlimages/curl:latest -- curl -f https://api-staging.agentflow.ai/health
+  only:
+    - develop
+
+# Deploy to Production
+deploy-production:
+  stage: deploy-production
+  image: alpine/helm:$HELM_VERSION
+  environment:
+    name: production
+    url: https://api.agentflow.ai
+  before_script:
+    - apk add --no-cache curl
+    - curl -LO "https://dl.k8s.io/release/v$KUBERNETES_VERSION/bin/linux/amd64/kubectl"
+    - chmod +x kubectl
+    - mv kubectl /usr/local/bin/
+    - mkdir -p ~/.kube
+    - echo "$KUBE_CONFIG_PRODUCTION" | base64 -d > ~/.kube/config
+  script:
+    - |
+      helm upgrade --install agentflow-api \
+        deployment/helm/agentflow-api \
+        --namespace agentflow \
+        --create-namespace \
+        --values deployment/helm/agentflow-api/values-production.yaml \
+        --set image.tag=$CI_COMMIT_SHA \
+        --wait --timeout=600s
+    - kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=agentflow-api -n agentflow --timeout=300s
+    - kubectl run --rm -i --restart=Never smoke-test --image=curlimages/curl:latest -- curl -f https://api.agentflow.ai/health
+  when: manual
+  only:
+    - main
+
+# Cleanup
+cleanup:
+  stage: cleanup
+  image: alpine:latest
+  script:
+    - echo "Cleanup job - would delete old container images"
+    # Add cleanup logic here
+  when: always
+  only:
+    - main
+    - develop

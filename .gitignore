@@ -30,6 +30,8 @@ bin/claude-flow-*
 # Environment
 .env
 .env.local
+.env.development
+.env.production
 .env.*.local
 .env.production
 FINAL_STATUS_REPORT.md
@@ -91,3 +93,4 @@ claude-flow-mcp-wrapper
 # Test artifacts
 test-output/
 test-reports/
+FINAL_STATUS_REPORT.md

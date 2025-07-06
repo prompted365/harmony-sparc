@@ -1,0 +1,203 @@
+global:
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'alerts@agentflow.ai'
+  smtp_auth_username: 'alerts@agentflow.ai'
+  smtp_auth_password: 'smtp_password'
+  smtp_require_tls: true
+  
+  # Slack configuration
+  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+  
+  # PagerDuty configuration
+  pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+
+# Templates for notifications
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Routing tree
+route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 1h
+  receiver: 'default-receiver'
+  routes:
+  # Critical alerts go to PagerDuty
+  - match:
+      severity: critical
+    receiver: 'pagerduty-critical'
+    group_wait: 10s
+    group_interval: 5m
+    repeat_interval: 12h
+    
+  # Warning alerts go to Slack
+  - match:
+      severity: warning
+    receiver: 'slack-warnings'
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h
+    
+  # AgentFlow API specific alerts
+  - match:
+      service: agentflow-api
+    receiver: 'agentflow-team'
+    group_wait: 10s
+    group_interval: 5m
+    repeat_interval: 2h
+    routes:
+    - match:
+        severity: critical
+      receiver: 'agentflow-critical'
+      group_wait: 10s
+      group_interval: 2m
+      repeat_interval: 30m
+
+# Receivers
+receivers:
+- name: 'default-receiver'
+  email_configs:
+  - to: 'devops@agentflow.ai'
+    subject: 'AgentFlow Alert: {{ .GroupLabels.alertname }}'
+    body: |
+      {{ range .Alerts }}
+      Alert: {{ .Annotations.summary }}
+      Description: {{ .Annotations.description }}
+      Labels: {{ range .Labels.SortedPairs }}{{ .Name }}: {{ .Value }}{{ end }}
+      {{ end }}
+
+- name: 'pagerduty-critical'
+  pagerduty_configs:
+  - service_key: 'YOUR_PAGERDUTY_SERVICE_KEY'
+    description: 'AgentFlow Critical Alert: {{ .GroupLabels.alertname }}'
+    details:
+      firing: '{{ .Alerts.Firing | len }}'
+      resolved: '{{ .Alerts.Resolved | len }}'
+      summary: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+
+- name: 'slack-warnings'
+  slack_configs:
+  - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+    channel: '#agentflow-alerts'
+    username: 'AlertManager'
+    icon_emoji: ':warning:'
+    title: 'AgentFlow Warning Alert'
+    text: |
+      {{ range .Alerts }}
+      *Alert:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+      *Severity:* {{ .Labels.severity }}
+      *Service:* {{ .Labels.service }}
+      {{ end }}
+    actions:
+    - type: button
+      text: 'View in Grafana'
+      url: 'https://grafana.agentflow.ai/d/agentflow-api'
+    - type: button
+      text: 'View Logs'
+      url: 'https://logs.agentflow.ai'
+
+- name: 'agentflow-team'
+  email_configs:
+  - to: 'agentflow-team@agentflow.ai'
+    subject: 'AgentFlow API Alert: {{ .GroupLabels.alertname }}'
+    body: |
+      Alert Details:
+      
+      {{ range .Alerts }}
+      Alert: {{ .Annotations.summary }}
+      Description: {{ .Annotations.description }}
+      Severity: {{ .Labels.severity }}
+      Service: {{ .Labels.service }}
+      Instance: {{ .Labels.instance }}
+      Timestamp: {{ .StartsAt }}
+      
+      Labels:
+      {{ range .Labels.SortedPairs }}  {{ .Name }}: {{ .Value }}
+      {{ end }}
+      
+      {{ end }}
+      
+      Grafana Dashboard: https://grafana.agentflow.ai/d/agentflow-api
+      Logs: https://logs.agentflow.ai
+  slack_configs:
+  - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+    channel: '#agentflow-api'
+    username: 'AlertManager'
+    icon_emoji: ':rotating_light:'
+    title: 'AgentFlow API Alert'
+    text: |
+      {{ range .Alerts }}
+      *Alert:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+      *Severity:* {{ .Labels.severity }}
+      *Instance:* {{ .Labels.instance }}
+      {{ end }}
+
+- name: 'agentflow-critical'
+  pagerduty_configs:
+  - service_key: 'YOUR_PAGERDUTY_SERVICE_KEY'
+    description: 'AgentFlow API Critical Alert: {{ .GroupLabels.alertname }}'
+    details:
+      firing: '{{ .Alerts.Firing | len }}'
+      resolved: '{{ .Alerts.Resolved | len }}'
+      summary: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+      service: 'agentflow-api'
+  slack_configs:
+  - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+    channel: '#agentflow-critical'
+    username: 'AlertManager'
+    icon_emoji: ':fire:'
+    title: 'CRITICAL: AgentFlow API Alert'
+    text: |
+      {{ range .Alerts }}
+      :fire: *CRITICAL ALERT* :fire:
+      
+      *Alert:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+      *Instance:* {{ .Labels.instance }}
+      *Started:* {{ .StartsAt }}
+      
+      Immediate action required!
+      {{ end }}
+    actions:
+    - type: button
+      text: 'View Dashboard'
+      url: 'https://grafana.agentflow.ai/d/agentflow-api'
+    - type: button
+      text: 'SSH to Instance'
+      url: 'https://console.agentflow.ai/ssh'
+  email_configs:
+  - to: 'oncall@agentflow.ai, cto@agentflow.ai'
+    subject: 'CRITICAL: AgentFlow API Alert - {{ .GroupLabels.alertname }}'
+    body: |
+      CRITICAL ALERT - IMMEDIATE ACTION REQUIRED
+      
+      {{ range .Alerts }}
+      Alert: {{ .Annotations.summary }}
+      Description: {{ .Annotations.description }}
+      Instance: {{ .Labels.instance }}
+      Started: {{ .StartsAt }}
+      
+      This is a critical alert that requires immediate attention.
+      
+      Quick Actions:
+      1. Check the Grafana dashboard: https://grafana.agentflow.ai/d/agentflow-api
+      2. Review logs: https://logs.agentflow.ai
+      3. Check service status: kubectl get pods -n agentflow
+      4. Scale if needed: kubectl scale deployment agentflow-api --replicas=5
+      
+      {{ end }}
+
+# Inhibit rules
+inhibit_rules:
+- source_match:
+    severity: 'critical'
+  target_match:
+    severity: 'warning'
+  equal: ['alertname', 'cluster', 'service']
+
+# Notification templates
+templates:
+- '/etc/alertmanager/templates/default.tmpl'

@@ -1,0 +1,72 @@
+1. Get the application URL by running these commands:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "agentflow-api.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+           You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "agentflow-api.fullname" . }}'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "agentflow-api.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.service.port }}
+{{- else if contains "ClusterIP" .Values.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "{{ include "agentflow-api.selectorLabels" . }}" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+{{- end }}
+
+2. Health check endpoint:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}/health
+{{- end }}
+{{- else }}
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ include "agentflow-api.fullname" . }} 8080:{{ .Values.service.port }}
+  Then visit: http://127.0.0.1:8080/health
+{{- end }}
+
+3. Monitoring (if enabled):
+{{- if .Values.monitoring.enabled }}
+  Metrics endpoint: /metrics
+  ServiceMonitor: {{ include "agentflow-api.fullname" . }}
+{{- end }}
+
+4. Scaling information:
+{{- if .Values.autoscaling.enabled }}
+  HPA: {{ include "agentflow-api.fullname" . }}
+  Min replicas: {{ .Values.autoscaling.minReplicas }}
+  Max replicas: {{ .Values.autoscaling.maxReplicas }}
+{{- else }}
+  Static replicas: {{ .Values.replicaCount }}
+{{- end }}
+
+5. Security features:
+  - Pod Security Context: Non-root user
+  - Network Policy: {{ if .Values.networkPolicy.enabled }}Enabled{{ else }}Disabled{{ end }}
+  - TLS/SSL: {{ if .Values.ingress.tls }}Enabled{{ else }}Disabled{{ end }}
+  - RBAC: {{ if .Values.serviceAccount.create }}Enabled{{ else }}Disabled{{ end }}
+
+6. Useful commands:
+  # View logs
+  kubectl logs -n {{ .Release.Namespace }} -l {{ include "agentflow-api.selectorLabels" . }}
+  
+  # Check pod status
+  kubectl get pods -n {{ .Release.Namespace }} -l {{ include "agentflow-api.selectorLabels" . }}
+  
+  # View service details
+  kubectl get svc -n {{ .Release.Namespace }} {{ include "agentflow-api.fullname" . }}
+  
+  # Check ingress
+  kubectl get ingress -n {{ .Release.Namespace }} {{ include "agentflow-api.fullname" . }}
+  
+  # View HPA status
+  kubectl get hpa -n {{ .Release.Namespace }} {{ include "agentflow-api.fullname" . }}
+
+Thank you for installing {{ .Chart.Name }}!
+For support, visit: https://github.com/agentflow/api/issues

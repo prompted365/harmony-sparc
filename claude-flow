@@ -1,40 +1,34 @@
-#!/usr/bin/env bash
-# Claude-Flow local wrapper
-# This script ensures claude-flow runs from your project directory
+#!/usr/bin/env node
 
-# Save the current directory
-PROJECT_DIR="${PWD}"
+/**
+ * Claude Flow CLI - AI-Driven Development Toolkit
+ * 
+ * This is the main entry point for the Claude Flow command-line interface.
+ * It provides powerful AI coordination capabilities for Claude Code.
+ */
 
-# Set environment to ensure correct working directory
-export PWD="${PROJECT_DIR}"
-export CLAUDE_WORKING_DIR="${PROJECT_DIR}"
+const { spawn } = require('child_process');
+const path = require('path');
 
-# Try to find claude-flow binary
-# Check common locations for npm/npx installations
+// Resolve the actual CLI path
+const cliPath = path.resolve(__dirname, 'dist', 'index.js');
 
-# Development mode - use local bin
-if [ -f "${PROJECT_DIR}/bin/claude-flow" ]; then
-  cd "${PROJECT_DIR}"
-  exec "${PROJECT_DIR}/bin/claude-flow" "$@"
-fi
+// Forward all arguments to the actual CLI
+const child = spawn(process.execPath, [cliPath, ...process.argv.slice(2)], {
+  stdio: 'inherit',
+  env: {
+    ...process.env,
+    CLAUDE_FLOW_CLI: 'true'
+  }
+});
 
-# 1. Local node_modules (npm install claude-flow)
-if [ -f "${PROJECT_DIR}/node_modules/.bin/claude-flow" ]; then
-  cd "${PROJECT_DIR}"
-  exec "${PROJECT_DIR}/node_modules/.bin/claude-flow" "$@"
+// Forward the exit code
+child.on('exit', (code) => {
+  process.exit(code);
+});
 
-# 2. Parent directory node_modules (monorepo setup)
-elif [ -f "${PROJECT_DIR}/../node_modules/.bin/claude-flow" ]; then
-  cd "${PROJECT_DIR}"
-  exec "${PROJECT_DIR}/../node_modules/.bin/claude-flow" "$@"
-
-# 3. Global installation (npm install -g claude-flow)
-elif command -v claude-flow &> /dev/null; then
-  cd "${PROJECT_DIR}"
-  exec claude-flow "$@"
-
-# 4. Fallback to npx (will download if needed)
-else
-  cd "${PROJECT_DIR}"
-  exec npx claude-flow@latest "$@"
-fi
+// Handle errors
+child.on('error', (err) => {
+  console.error('Failed to start Claude Flow:', err);
+  process.exit(1);
+});

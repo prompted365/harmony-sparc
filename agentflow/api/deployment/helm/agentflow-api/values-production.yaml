@@ -1,0 +1,363 @@
+# Production environment values
+# This file overrides the default values.yaml for production deployments
+
+# Image configuration for production
+image:
+  registry: ghcr.io
+  repository: agentflow/api
+  tag: "latest"  # Will be overridden by CI/CD with specific version
+  pullPolicy: IfNotPresent  # More stable for production
+
+# Scaling for production (higher resources and replicas)
+replicaCount: 5
+
+# Resource limits for production
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+# Nginx sidecar resources for production
+nginx:
+  enabled: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+
+# Autoscaling for production
+autoscaling:
+  enabled: true
+  minReplicas: 5
+  maxReplicas: 50
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 600  # Longer stabilization for production
+      policies:
+      - type: Percent
+        value: 25  # Conservative scale down
+        periodSeconds: 120
+      - type: Pods
+        value: 2
+        periodSeconds: 120
+    scaleUp:
+      stabilizationWindowSeconds: 60
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 60
+      - type: Pods
+        value: 5
+        periodSeconds: 60
+
+# VPA for production
+vpa:
+  enabled: true
+  updateMode: "Auto"
+  resourcePolicy:
+    containerPolicies:
+    - containerName: agentflow-api
+      maxAllowed:
+        cpu: 4000m
+        memory: 8Gi
+      minAllowed:
+        cpu: 200m
+        memory: 256Mi
+    - containerName: nginx-sidecar
+      maxAllowed:
+        cpu: 1000m
+        memory: 512Mi
+      minAllowed:
+        cpu: 50m
+        memory: 64Mi
+
+# Ingress configuration for production
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/rate-limit: "1000"  # Higher rate limit for production
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://agentflow.ai,https://www.agentflow.ai"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET,POST,PUT,DELETE,OPTIONS,HEAD"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization"
+    nginx.ingress.kubernetes.io/cors-max-age: "86400"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      more_set_headers "Content-Security-Policy: default-src 'self'";
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+  hosts:
+    - host: api.agentflow.ai
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: agentflow-api-tls
+      hosts:
+        - api.agentflow.ai
+
+# Environment variables for production
+env:
+  NODE_ENV: "production"
+  PORT: "3000"
+  LOG_LEVEL: "info"  # Less verbose logging in production
+  CORS_ORIGINS: "https://agentflow.ai,https://www.agentflow.ai"
+  RATE_LIMIT_WINDOW: "900000"
+  RATE_LIMIT_MAX: "2000"  # Higher rate limit for production
+  HEALTH_CHECK_INTERVAL: "30"
+  METRICS_ENABLED: "true"
+  CACHE_TTL: "300"
+  REQUEST_TIMEOUT: "30000"
+  GRACEFUL_SHUTDOWN_TIMEOUT: "15000"  # Longer graceful shutdown
+  MAX_CONNECTIONS: "1000"
+  CLUSTER_WORKERS: "auto"  # Use all available CPU cores
+
+# Secrets for production (stored securely)
+secrets:
+  # Base64 encoded production secrets - replace with actual secure values
+  DB_PASSWORD: "cHJvZHVjdGlvbi1kYi1wYXNzd29yZA=="  # Placeholder - use actual secure password
+  JWT_SECRET: "cHJvZHVjdGlvbi1qd3Qtc2VjcmV0LWNvbXBsZXgtcmFuZG9t"  # Placeholder - use actual secure secret
+  API_KEY: "cHJvZHVjdGlvbi1hcGkta2V5LXNlY3VyZQ=="  # Placeholder - use actual secure key
+  REDIS_PASSWORD: "cHJvZHVjdGlvbi1yZWRpcy1wYXNzd29yZA=="  # Placeholder - use actual secure password
+  ENCRYPTION_KEY: "cHJvZHVjdGlvbi1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcw=="  # Placeholder - use actual 32-byte key
+
+# Network policy - restrictive for production
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: ingress-nginx
+      - namespaceSelector:
+          matchLabels:
+            name: monitoring
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: agentflow-api
+      ports:
+      - protocol: TCP
+        port: 3000
+      - protocol: TCP
+        port: 80
+  egress:
+    - to: []
+      ports:
+      - protocol: TCP
+        port: 53
+      - protocol: UDP
+        port: 53
+    - to: []
+      ports:
+      - protocol: TCP
+        port: 443
+      - protocol: TCP
+        port: 80
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: database
+      ports:
+      - protocol: TCP
+        port: 5432
+    - to:
+      - namespaceSelector:
+          matchLabels:
+            name: redis
+      ports:
+      - protocol: TCP
+        port: 6379
+
+# Monitoring configuration for production
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    path: /metrics
+    port: 3000
+    labels:
+      release: prometheus
+    annotations:
+      prometheus.io/scrape: "true"
+
+# Probes configuration for production (conservative)
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 60  # Longer startup time allowed
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 30
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+startupProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 30
+
+# Pod disruption budget for production
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 3  # Ensure high availability
+
+# Node affinity for production (prefer production nodes)
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: node-type
+          operator: In
+          values:
+          - production
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      preference:
+        matchExpressions:
+        - key: instance-size
+          operator: In
+          values:
+          - large
+          - xlarge
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: app.kubernetes.io/name
+          operator: In
+          values:
+          - agentflow-api
+      topologyKey: kubernetes.io/hostname
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - agentflow-api
+        topologyKey: topology.kubernetes.io/zone
+
+# Tolerations for production nodes
+tolerations:
+- key: "production"
+  operator: "Equal"
+  value: "true"
+  effect: "NoSchedule"
+- key: "dedicated"
+  operator: "Equal"
+  value: "agentflow"
+  effect: "NoSchedule"
+
+# Security context for production
+podSecurityContext:
+  fsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  capabilities:
+    drop:
+    - ALL
+  seccompProfile:
+    type: RuntimeDefault
+
+# Extra annotations for production pods
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "3000"
+  prometheus.io/path: "/metrics"
+  environment: "production"
+  backup.agentflow.ai/enabled: "true"
+  security.agentflow.ai/scan: "true"
+  
+# Extra labels for production
+podLabels:
+  environment: "production"
+  tier: "api"
+  team: "platform"
+  criticality: "high"
+  backup: "required"
+
+# Service configuration for production
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 80
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "tcp"
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-access-log-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-access-log-s3-bucket-name: "agentflow-access-logs"
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "3000"
+    prometheus.io/path: "/metrics"
+
+# Persistence configuration (if needed for logs or cache)
+persistence:
+  enabled: false  # Disabled by default, enable if needed
+  storageClass: "gp3"
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  annotations:
+    volume.beta.kubernetes.io/storage-class: "gp3"
+
+# Extra volumes for production
+extraVolumes:
+- name: logs-volume
+  emptyDir:
+    sizeLimit: 1Gi
+- name: cache-volume
+  emptyDir:
+    sizeLimit: 500Mi
+
+# Extra volume mounts for production
+extraVolumeMounts:
+- name: logs-volume
+  mountPath: /app/logs
+- name: cache-volume
+  mountPath: /app/cache

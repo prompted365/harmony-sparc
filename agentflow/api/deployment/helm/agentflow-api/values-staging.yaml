@@ -1,0 +1,222 @@
+# Staging environment values
+# This file overrides the default values.yaml for staging deployments
+
+# Image configuration for staging
+image:
+  registry: ghcr.io
+  repository: agentflow/api
+  tag: "staging-latest"
+  pullPolicy: Always
+
+# Scaling for staging (lower resources)
+replicaCount: 2
+
+# Resource limits for staging
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Nginx sidecar resources for staging
+nginx:
+  enabled: true
+  resources:
+    limits:
+      cpu: 100m
+      memory: 64Mi
+    requests:
+      cpu: 25m
+      memory: 32Mi
+
+# Autoscaling for staging
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 85
+
+# VPA for staging
+vpa:
+  enabled: false  # Disable VPA in staging
+
+# Ingress configuration for staging
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/rate-limit: "50"  # Lower rate limit for staging
+    nginx.ingress.kubernetes.io/rate-limit-window: "1m"
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"  # Use staging cert
+  hosts:
+    - host: api-staging.agentflow.ai
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: agentflow-api-staging-tls
+      hosts:
+        - api-staging.agentflow.ai
+
+# Environment variables for staging
+env:
+  NODE_ENV: "staging"
+  PORT: "3000"
+  LOG_LEVEL: "debug"  # More verbose logging in staging
+  CORS_ORIGINS: "https://staging.agentflow.ai,https://dev.agentflow.ai"
+  RATE_LIMIT_WINDOW: "900000"
+  RATE_LIMIT_MAX: "500"  # Lower rate limit
+  HEALTH_CHECK_INTERVAL: "15"  # More frequent health checks
+  METRICS_ENABLED: "true"
+  CACHE_TTL: "60"  # Shorter cache TTL for testing
+  REQUEST_TIMEOUT: "15000"  # Shorter timeout
+  GRACEFUL_SHUTDOWN_TIMEOUT: "5000"
+  DEBUG: "agentflow:*"  # Enable debug logging
+
+# Secrets for staging (different from production)
+secrets:
+  # Base64 encoded staging secrets - replace with actual values
+  DB_PASSWORD: "c3RhZ2luZy1wYXNzd29yZA=="  # "staging-password"
+  JWT_SECRET: "c3RhZ2luZy1qd3Qtc2VjcmV0"  # "staging-jwt-secret"
+  API_KEY: "c3RhZ2luZy1hcGkta2V5"  # "staging-api-key"
+  REDIS_PASSWORD: "c3RhZ2luZy1yZWRpcy1wYXNzd29yZA=="  # "staging-redis-password"
+  ENCRYPTION_KEY: "c3RhZ2luZy1lbmNyeXB0aW9uLWtleS0zMi1ieXRlcw=="  # "staging-encryption-key-32-bytes"
+
+# Network policy - more permissive for staging
+networkPolicy:
+  enabled: true
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            name: ingress-nginx
+      - namespaceSelector:
+          matchLabels:
+            name: monitoring
+      - namespaceSelector:
+          matchLabels:
+            name: development  # Allow access from dev namespace
+      - podSelector:
+          matchLabels:
+            app.kubernetes.io/name: agentflow-api
+      ports:
+      - protocol: TCP
+        port: 3000
+      - protocol: TCP
+        port: 80
+  egress:
+    - to: []  # Allow all egress in staging
+      ports:
+      - protocol: TCP
+        port: 53
+      - protocol: UDP
+        port: 53
+    - to: []
+      ports:
+      - protocol: TCP
+        port: 443
+      - protocol: TCP
+        port: 80
+    - to: []  # Allow all database connections
+      ports:
+      - protocol: TCP
+        port: 5432
+      - protocol: TCP
+        port: 6379
+
+# Monitoring configuration for staging
+monitoring:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 15s  # More frequent scraping in staging
+    path: /metrics
+    port: 3000
+
+# Probes configuration for staging (more aggressive)
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 10  # Faster startup
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 2
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 5
+  periodSeconds: 3
+  timeoutSeconds: 2
+  failureThreshold: 2
+
+startupProbe:
+  httpGet:
+    path: /health
+    port: 3000
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 10
+
+# Pod disruption budget for staging
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1  # Lower requirement for staging
+
+# Node affinity for staging (can run on smaller nodes)
+affinity:
+  nodeAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      preference:
+        matchExpressions:
+        - key: node-type
+          operator: In
+          values:
+          - staging
+          - development
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 50  # Less strict anti-affinity
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - agentflow-api
+        topologyKey: kubernetes.io/hostname
+
+# Tolerations for staging nodes
+tolerations:
+- key: "staging"
+  operator: "Equal"
+  value: "true"
+  effect: "NoSchedule"
+- key: "development"
+  operator: "Equal"
+  value: "true"
+  effect: "NoSchedule"
+
+# Extra annotations for staging pods
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "3000"
+  prometheus.io/path: "/metrics"
+  environment: "staging"
+  deployment.agentflow.ai/auto-restart: "true"
+  
+# Extra labels for staging
+podLabels:
+  environment: "staging"
+  tier: "api"
+  team: "platform"

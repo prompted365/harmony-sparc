@@ -1,0 +1,43 @@
+{{- if .Values.serviceAccount.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "agentflow-api.fullname" . }}-role
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentflow-api.labels" . | nindent 4 }}
+    component: rbac
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "agentflow-api.fullname" . }}-role-binding
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "agentflow-api.labels" . | nindent 4 }}
+    component: rbac
+subjects:
+- kind: ServiceAccount
+  name: {{ include "agentflow-api.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: Role
+  name: {{ include "agentflow-api.fullname" . }}-role
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

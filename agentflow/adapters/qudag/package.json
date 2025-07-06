@@ -1,0 +1,61 @@
+{
+  "name": "@agentflow/qudag-adapter",
+  "version": "1.0.0",
+  "description": "Quantum-resistant communication and resource exchange adapter for AgentFlow platform",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest --config jest.config.js",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:integration": "jest --testMatch='**/*.integration.test.ts'",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "example": "ts-node examples/usage.ts"
+  },
+  "keywords": [
+    "qudag",
+    "quantum-resistant",
+    "ml-kem",
+    "ml-dsa",
+    "cryptography",
+    "p2p",
+    "dark-domain",
+    "onion-routing",
+    "resource-exchange",
+    "agentflow"
+  ],
+  "author": "AgentFlow Team",
+  "license": "MIT",
+  "dependencies": {
+    "events": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/jest": "^29.0.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "ts-node": "^10.0.0"
+  },
+  "peerDependencies": {
+    "@agentflow/core": "^1.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/agentflow/harmony-sparc.git",
+    "directory": "src/agentflow/adapters/qudag"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

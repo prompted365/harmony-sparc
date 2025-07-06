@@ -1,0 +1,96 @@
+# Production Multi-Stage Dockerfile for Harmony SPARC
+# Optimized for security, performance, and minimal image size
+
+# Stage 1: Dependencies and build cache
+FROM node:20-alpine AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY agentflow/api/package*.json ./agentflow/api/
+COPY agentflow/core/package*.json ./agentflow/core/
+COPY agentflow/adapters/qudag/package*.json ./agentflow/adapters/qudag/
+
+# Install dependencies
+RUN npm ci --only=production --frozen-lockfile && npm cache clean --force
+
+# Stage 2: Build stage
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+# Copy dependencies from previous stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code
+COPY . .
+
+# Install development dependencies needed for build
+RUN npm install --only=development --frozen-lockfile
+
+# Build the application
+RUN npm run build
+RUN npm run build:perf
+
+# Build smart contracts
+RUN npm run hardhat:compile
+
+# Stage 3: Production runtime
+FROM node:20-alpine AS runtime
+
+# Install security updates and required tools
+RUN apk upgrade --update-cache --available && \
+    apk add --no-cache \
+    dumb-init \
+    curl \
+    ca-certificates \
+    tzdata \
+    tini
+
+# Create non-root user with specific UID/GID
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Set working directory
+WORKDIR /app
+
+# Copy production dependencies
+COPY --from=deps --chown=nodejs:nodejs /app/node_modules ./node_modules
+
+# Copy built application
+COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/artifacts ./artifacts
+COPY --from=builder --chown=nodejs:nodejs /app/package*.json ./
+
+# Copy essential configuration files
+COPY --from=builder --chown=nodejs:nodejs /app/.env.production ./.env
+COPY --from=builder --chown=nodejs:nodejs /app/hardhat.config.js ./
+COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
+
+# Create necessary directories
+RUN mkdir -p logs tmp uploads && \
+    chown -R nodejs:nodejs logs tmp uploads
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV API_PORT=3001
+ENV WEBSOCKET_PORT=3002
+ENV METRICS_PORT=9090
+ENV TZ=UTC
+
+# Switch to non-root user
+USER nodejs
+
+# Expose ports
+EXPOSE 3000 3001 3002 9090
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:3000/health || exit 1
+
+# Use tini for proper signal handling
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# Start the application
+CMD ["node", "dist/index.js"]
