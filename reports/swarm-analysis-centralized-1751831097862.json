@@ -1,0 +1,13 @@
+{
+  "objective": "Use an agentic swarm to research, plan, and create an application that investigates and curates topics, trends and insights for content generation and strategic messaging. We'll want configurable brands but for the initial one, lets do Energy Enhancement System. We can use a variety of sources from the web as well as rss feeds and need to leverage AstraDB  and hybrid lexical and semantic retrieval with ai agent writers to generate a weekly publication plan including all the headers seen in the example week found at ref/EESYSTEM Publication Schedule.xlsx. The goal is to ultimately have a research, curation, analysis engine, and a configured profile for EESystem brand that can be set to research and curate and analyze daily while generating a full weekly publication schedule as seen in the ref example autonomously. You will need to write prompts for each piece and leverage the knowledge base for the brand and the knowledge base for the material. The application should have an attractive yet simple interface that supports document upload, manual content generation, scheduling preferences for the ai agents, and model selection via requesty.ai llm router (not the same api as openai or claude, but supports both). Astra DB, by the way, handles embeddings automatically and our platform should be designed to leverage this along with a robust hybrid lexical and semantic retrieval system from the Astra DB Data API. We will also need pre-processing and chunking for research content and uploads as well as reranking and whatnot. Lastly, the system should have memory (short and longterm) using sqlite for short and astradb for longterm (not just of conversations, but also of the content that was published). Use a python backend with react frontend leveraging vite/typescript/tailwindcss/shadcn/ui and ensure that volta is initialized out of the gate and that ts-node is configured, such that types can be tested at each implementation step by the tester. You have a good crew. Lets get it done",
+  "strategy": "analysis",
+  "mode": "centralized",
+  "maxAgents": 10,
+  "timeout": 60,
+  "parallel": true,
+  "monitor": false,
+  "output": "json",
+  "outputDir": "./reports",
+  "timestamp": "2025-07-06T19:44:57.862Z",
+  "id": "swarm-analysis-centralized-1751831097862"
+}

@@ -4,8 +4,8 @@
  */
 
 import request from 'supertest';
-import { Server } from '../../src/server';
-import { ethers } from 'ethers';
+import { Server } from '../../api/server';
+import { ethers, Wallet } from 'ethers';
 
 describe('Financial System Integration Tests', () => {
   let server: Server;
@@ -23,7 +23,7 @@ describe('Financial System Integration Tests', () => {
       .expect(201);
     
     walletAddress = response.body.data.address;
-    testWalletAddress = ethers.Wallet.createRandom().address;
+    testWalletAddress = Wallet.createRandom().address;
   });
 
   describe('Wallet Creation → Balance Check → Payment Flow', () => {
@@ -198,7 +198,7 @@ describe('Financial System Integration Tests', () => {
     });
 
     it('should handle nonexistent wallet', async () => {
-      const nonexistentAddress = ethers.Wallet.createRandom().address;
+      const nonexistentAddress = Wallet.createRandom().address;
       
       const response = await request(app)
         .get(`/api/v1/financial/wallets/${nonexistentAddress}`)

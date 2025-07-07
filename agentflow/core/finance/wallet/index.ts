@@ -18,7 +18,7 @@ export type {
 } from './recovery-manager';
 
 // Factory function for easy wallet system setup
-import { ethers } from 'ethers';
+import { ethers, Provider, JsonRpcProvider } from 'ethers';
 import { WalletManager } from './wallet-manager';
 import { WalletAPI } from './wallet-api';
 import { RecoveryManager } from './recovery-manager';
@@ -35,10 +35,10 @@ export function createWalletSystem(config: {
   manager: WalletManager;
   api: WalletAPI;
   recovery: RecoveryManager;
-  provider: ethers.Provider;
+  provider: Provider;
 } {
   // Create provider
-  const provider = new ethers.JsonRpcProvider(config.rpcUrl);
+  const provider = new JsonRpcProvider(config.rpcUrl);
   
   // Create wallet manager
   const manager = new WalletManager(provider, config.security);

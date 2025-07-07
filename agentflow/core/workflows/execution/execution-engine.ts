@@ -409,7 +409,7 @@ export class ExecutionEngine {
   ): Promise<any> {
     const branches = node.config?.branches || [];
     const results = await Promise.all(
-      branches.map(branchId => {
+      branches.map((branchId: string) => {
         // Execute branch nodes in parallel
         return { branchId, result: 'Branch executed' };
       })
@@ -829,5 +829,27 @@ export class ExecutionEngine {
    */
   registerExecutor(nodeType: NodeType, executor: TaskExecutor): void {
     this.taskExecutors.set(nodeType, executor);
+  }
+
+  /**
+   * Get workflow instance by ID
+   */
+  getInstance(instanceId: string): WorkflowInstance | undefined {
+    return this.activeInstances.get(instanceId);
+  }
+
+  /**
+   * Get all workflow instances
+   */
+  getInstances(): WorkflowInstance[] {
+    return Array.from(this.activeInstances.values());
+  }
+
+  /**
+   * Get workflow instances by status
+   */
+  getInstancesByStatus(status: WorkflowStatus): WorkflowInstance[] {
+    return Array.from(this.activeInstances.values())
+      .filter(instance => instance.status === status);
   }
 }

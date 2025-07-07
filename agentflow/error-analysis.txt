@@ -1,0 +1,179 @@
+TypeScript Error Analysis Report
+================================
+Total Errors: 131
+
+CATEGORIZED ERROR BREAKDOWN:
+
+1. ETHERS.JS V6 MIGRATION ISSUES (27 errors)
+===========================================
+These errors are due to breaking changes in ethers.js v6:
+
+BigNumber/bigint issues:
+- adapters/qudag/exchange/exchange-manager.ts(533,34): Property 'toNumber' does not exist on type 'bigint'
+- core/finance/payment/fees/fee-calculator.ts(230,7): Argument of type 'bigint' is not assignable to parameter of type 'number'
+
+Transaction Response/Receipt changes:
+- adapters/qudag/exchange/exchange-manager.ts(502,25): Property 'transactionHash' does not exist on type 'TransactionReceipt'
+- adapters/qudag/exchange/exchange-manager.ts(514,25): Property 'transactionHash' does not exist on type 'TransactionReceipt'
+- adapters/qudag/exchange/exchange-manager.ts(528,25): Property 'transactionHash' does not exist on type 'TransactionReceipt'
+- adapters/qudag/exchange/exchange-manager.ts(1003,23): Property 'r' does not exist on type 'TransactionResponse'
+- adapters/qudag/exchange/exchange-manager.ts(1003,31): Property 's' does not exist on type 'TransactionResponse'
+- adapters/qudag/exchange/exchange-manager.ts(1003,39): Property 'v' does not exist on type 'TransactionResponse'
+- adapters/qudag/exchange/exchange-manager.ts(1004,17): Property 'r' does not exist on type 'TransactionResponse'
+- adapters/qudag/exchange/exchange-manager.ts(1005,17): Property 's' does not exist on type 'TransactionResponse'
+- adapters/qudag/exchange/exchange-manager.ts(1006,17): Property 'v' does not exist on type 'TransactionResponse'
+
+Provider API changes:
+- adapters/qudag/exchange/exchange-manager.ts(1024,34): Property 'getGasPrice' does not exist on type 'JsonRpcProvider'
+
+Utils changes:
+- core/finance/payment/processors/multi-token-processor.ts(7,63): Module '"ethers"' has no exported member 'parseGwei'
+
+Contract interface changes:
+- adapters/qudag/exchange/exchange-manager.ts(592,67): Property 'createOrder' does not exist on type 'BaseContractMethod'
+- core/finance/payment/escrow/escrow-contract.ts(42,40): Property 'createEscrow' does not exist on type 'BaseContract'
+- core/finance/payment/escrow/escrow-contract.ts(73,40): Property 'releaseEscrow' does not exist on type 'BaseContract'
+- core/finance/payment/escrow/escrow-contract.ts(86,40): Property 'refundEscrow' does not exist on type 'BaseContract'
+- core/finance/payment/escrow/escrow-contract.ts(121,40): Property 'updateCondition' does not exist on type 'BaseContract'
+- core/finance/payment/escrow/escrow-contract.ts(165,7): Type incompatible with 'Contract'
+- core/finance/payment/processors/multi-token-processor.ts(128,38): Property 'transfer' does not exist on type 'BaseContract'
+- core/finance/payment/processors/multi-token-processor.ts(176,46): Property 'transfer' does not exist on type 'BaseContract'
+- core/finance/payment/processors/multi-token-processor.ts(178,40): Property 'transfer' does not exist on type 'BaseContract'
+- core/finance/payment/processors/multi-token-processor.ts(264,42): Property 'transfer' does not exist on type 'BaseContract'
+
+Signature handling:
+- core/finance/wallet/transaction-manager.ts(71,14): 'parsedTx.signature' is possibly 'null'
+- core/finance/wallet/transaction-manager.ts(72,14): 'parsedTx.signature' is possibly 'null'
+- core/finance/wallet/transaction-manager.ts(73,14): 'parsedTx.signature' is possibly 'null'
+
+2. IMPORT/MODULE ERRORS (13 errors)
+===================================
+Missing or incorrect exports:
+
+API module exports:
+- api/example.ts(6,10): Module '"./index"' has no exported member 'createApiServer'
+- api/example.ts(6,27): Module '"./index"' has no exported member 'createProductionApiServer'
+- api/example.ts(6,54): Module '"./index"' has no exported member 'createDevelopmentApiServer'
+- index.ts(22,10): Module '"./api/server"' has no exported member 'default'
+
+QuDAG adapter exports:
+- index.ts(41,3): 'QudagAdapter' should be 'QuDAGAdapter'
+- index.ts(42,3): Module has no exported member 'CryptoManager'
+- index.ts(43,3): Module has no exported member 'NetworkManager'
+- index.ts(44,3): Module has no exported member 'DomainManager'
+- index.ts(45,3): Module has no exported member 'ExchangeManager'
+- index.ts(46,3): Module has no exported member 'RoutingManager'
+
+Export conflicts:
+- index.ts(18,1): 'ApiError' already exported
+- index.ts(18,1): 'PaymentRequest' already exported
+- index.ts(18,1): 'Transaction' already exported
+- index.ts(18,1): 'ExecutionOptions' already exported
+
+3. TYPE ANNOTATION ERRORS (42 errors)
+=====================================
+Missing type annotations and implicit 'any' types:
+
+Implicit any parameters:
+- api/routes/workflows.ts(85,23): Parameter 'a' implicitly has an 'any' type
+- api/routes/workflows.ts(85,26): Parameter 'b' implicitly has an 'any' type
+- api/routes/workflows.ts(284,13): Parameter 'instance' implicitly has an 'any' type
+- api/routes/workflows.ts(415,15): Parameter 'instance' implicitly has an 'any' type
+- api/routes/workflows.ts(416,14): Parameter 'a' implicitly has an 'any' type
+- api/routes/workflows.ts(416,17): Parameter 'b' implicitly has an 'any' type
+- api/routes/workflows.ts(225,41): Parameter 'event' implicitly has an 'any' type
+- core/workflows/execution/execution-engine.ts(412,20): Parameter 'branchId' implicitly has an 'any' type
+
+Type mismatches:
+- adapters/qudag/crypto/crypto-manager.ts(325,66): Uint8Array not assignable to Buffer
+- adapters/qudag/examples/agentflow-integration.ts(143,63): Type mismatch for ResourceOrder
+- adapters/qudag/examples/usage.ts(128,57): Type mismatch for ResourceOrder
+- adapters/qudag/examples/usage.ts(144,61): Type mismatch for ResourceOrder
+- core/finance/fees/fee-engine.test.ts(480,77): Type mismatch for PaymentRequest
+- core/finance/fees/fee-engine.test.ts(501,77): Type mismatch for PaymentRequest
+- api/routes/workflows.ts(180,58): {} not assignable to WorkflowContext
+- api/routes/workflows.ts(336,47): Record<string,any> not assignable to WorkflowContext
+- api/middleware/cache.ts(225,33): {} not assignable to CacheOptions
+- api/middleware/rate-limit.ts(213,37): {} not assignable to RateLimitOptions
+- api/middleware/validation.ts(26,3): Type mismatch for ValidationErrorDetail[]
+- api/utils/async-handler.ts(266,23): {} not assignable to Error
+- core/finance/payment/payment-system.ts(172,7): "degraded" not assignable to "healthy"
+- core/finance/payment/payment-system.ts(176,7): "degraded" not assignable to "healthy"
+- core/finance/wallet/transaction-manager.ts(330,7): number not assignable to string
+- core/finance/payment/api/payment-api.ts(42,32): string|undefined not assignable to string
+
+Property mismatches:
+- adapters/qudag/exchange/exchange-manager.ts(376,9): 'ethSignature' does not exist, should be 'signature'
+- adapters/qudag/exchange/exchange-manager.ts(502,9): 'txHash' does not exist on ResourceOrder
+- api/routes/qudag.ts(157,11): 'signature' missing in object literal
+- api/routes/qudag.ts(292,7): 'quantumResistant' does not exist in ApiMeta (7 occurrences)
+
+Index signature issues:
+- core/finance/payment/processors/multi-token-processor.ts(342,31): Element implicitly has 'any' type
+
+4. ERROR HANDLING (15 errors)
+=============================
+All 'unknown' type errors in catch blocks:
+
+- adapters/qudag/network/network-manager.ts(246,79): 'error' is of type 'unknown'
+- api/scripts/bottleneck-analysis.ts(222,28): 'error' is of type 'unknown'
+- api/scripts/generate-performance-report.ts(146,64): 'error' is of type 'unknown'
+- core/finance/wallet/wallet-api.ts: 14 occurrences of 'error' is of type 'unknown'
+- tests/run-integration-tests.ts(106,61): 'parseError' is of type 'unknown'
+
+5. MISSING PROPERTIES/METHODS (34 errors)
+=========================================
+Methods not found on types:
+
+WorkflowRegistry methods:
+- api/routes/workflows.ts(81,32): 'getAllWorkflows' does not exist
+- api/routes/workflows.ts(123,29): 'getWorkflow' does not exist
+- api/routes/workflows.ts(175,14): 'registerWorkflow' does not exist
+- api/routes/workflows.ts(211,31): 'getWorkflow' does not exist
+- api/routes/workflows.ts(248,14): 'updateWorkflow' does not exist
+- api/routes/workflows.ts(271,29): 'getWorkflow' does not exist
+- api/routes/workflows.ts(298,12): 'unregisterWorkflow' does not exist
+- api/routes/workflows.ts(324,31): 'getWorkflow' does not exist
+- api/routes/workflows.ts(402,31): 'getWorkflow' does not exist
+- api/routes/workflows.ts(447,29): 'getWorkflow' does not exist
+
+ExecutionEngine methods:
+- api/routes/workflows.ts(283,35): 'getInstancesByStatus' does not exist
+- api/routes/workflows.ts(414,33): 'getInstances' does not exist
+- api/routes/workflows.ts(480,27): 'getInstance' does not exist
+- api/routes/workflows.ts(513,27): 'getInstance' does not exist
+- api/routes/workflows.ts(546,27): 'getInstance' does not exist
+
+Other missing methods:
+- core/finance/fees/fee-api.ts(139,41): 'getCalculator' does not exist on FeeEngine
+- core/finance/wallet/key-manager.ts(93,28): 'getAuthTag' does not exist on Cipher
+- core/finance/wallet/key-manager.ts(125,16): 'setAuthTag' does not exist on Decipher
+
+6. UNINITIALIZED PROPERTIES (9 errors)
+======================================
+- api/routes/qudag.ts(37,11): Property 'config' not initialized
+- core/finance/fees/fee-distributor.ts(69,11): Property 'distributionStats' not initialized
+- core/finance/fees/fee-distributor.ts(70,11): Property 'stakingPool' not initialized
+- core/finance/fees/fee-engine.ts(69,11): Property 'analytics' not initialized
+- core/finance/fees/fee-engine.ts(70,11): Property 'networkConditions' not initialized
+- core/finance/payment/api/payment-routes.ts(58,11): Property 'paymentProcessor' not initialized
+- core/finance/payment/api/payment-routes.ts(59,11): Property 'escrowManager' not initialized
+- core/finance/payment/api/payment-routes.ts(60,11): Property 'webhookManager' not initialized
+- core/finance/payment/api/payment-routes.ts(61,11): Property 'notificationService' not initialized
+
+7. MISCELLANEOUS ERRORS (9 errors)
+==================================
+- api/routes/qudag.ts(207,7): Cannot find name 'logger'
+- api/routes/workflows.ts(63,18): Expected 1-2 arguments, but got 0
+- api/routes/workflows.ts(65,16): Expected 2-3 arguments, but got 1
+- api/routes/workflows.ts(225,36): Cannot find name 'WebSocket'
+- core/workflows/events/event-bus.ts(56,35): Right-hand side of 'instanceof' invalid
+- adapters/qudag/exchange/exchange-manager.ts: Multiple 'receipt' is possibly 'null' (6 occurrences)
+
+PRIORITY FIXES:
+===============
+1. HIGH: Ethers.js v6 migration - Update all contract interactions and provider methods
+2. HIGH: Fix module exports in index.ts and api/index.ts
+3. MEDIUM: Add proper error type handling with type guards
+4. MEDIUM: Initialize all class properties in constructors
+5. LOW: Add missing type annotations to parameters

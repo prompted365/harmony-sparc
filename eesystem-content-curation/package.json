@@ -1,0 +1,71 @@
+{
+  "name": "eesystem-content-curation",
+  "version": "1.0.0",
+  "description": "EESystem Content Curation Platform - Comprehensive content management and AI-powered curation",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "backend:dev": "cd backend && uvicorn main:app --reload --host 0.0.0.0 --port 8000",
+    "frontend:dev": "cd frontend && npm run dev",
+    "build": "npm run backend:build && npm run frontend:build",
+    "backend:build": "cd backend && python -m build",
+    "frontend:build": "cd frontend && npm run build",
+    "test": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "test:unit": "jest --testPathPattern=unit",
+    "test:integration": "jest --testPathPattern=integration",
+    "test:e2e": "playwright test",
+    "test:performance": "k6 run tests/performance/*.js",
+    "test:security": "npm audit && npm run test:security:auth",
+    "test:security:auth": "jest --testPathPattern=security",
+    "test:compliance": "jest --testPathPattern=compliance",
+    "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+    "format": "prettier --write .",
+    "type-check": "tsc --noEmit",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "k8s:deploy": "kubectl apply -f deployment/kubernetes/",
+    "k8s:status": "kubectl get pods -l app=eesystem-content-curation"
+  },
+  "keywords": [
+    "eesystem",
+    "content-curation",
+    "health-wellness",
+    "ai-agents",
+    "fastapi",
+    "react",
+    "typescript",
+    "astradb",
+    "content-management"
+  ],
+  "author": "EESystem Development Team",
+  "license": "PRIVATE",
+  "dependencies": {
+    "concurrently": "^8.2.0",
+    "cross-env": "^7.0.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.40.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-react": "^7.32.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "jest": "^29.5.0",
+    "playwright": "^1.35.0",
+    "prettier": "^2.8.8",
+    "typescript": "^5.0.0"
+  },
+  "workspaces": [
+    "frontend",
+    "backend",
+    "shared"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

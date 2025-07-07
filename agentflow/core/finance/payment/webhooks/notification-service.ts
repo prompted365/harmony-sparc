@@ -4,6 +4,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { WebSocket } from 'ws';
 import { PaymentTransaction, PaymentEvent, EscrowAccount } from '../types';
 import { WebhookManager } from './webhook-manager';
 

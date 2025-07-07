@@ -228,7 +228,7 @@ export function cacheMiddleware(options: CacheOptions & {
   onHit?: (req: ApiRequest, res: Response, data: any) => void;
   onMiss?: (req: ApiRequest, res: Response) => void;
   tags?: string[];
-} = {}) {
+} = {} as any) {
   const {
     ttl = 60, // 60 seconds default
     keyGenerator = defaultKeyGenerator,

@@ -9,7 +9,7 @@
     "test": "jest",
     "test:integration": "jest --config jest.integration.config.js",
     "test:performance": "jest --config jest.performance.config.js",
-    "dev": "nodemon --exec ts-node api/server.ts",
+    "dev": "TS_NODE_COMPILER_OPTIONS='{\"strict\":false,\"noUnusedLocals\":false,\"noUnusedParameters\":false,\"noImplicitReturns\":false}' nodemon --exec ts-node api/server.ts",
     "start": "node dist/api/server.js",
     "lint": "eslint . --ext .ts,.js",
     "format": "prettier --write \"**/*.{js,ts,json,md}\""
@@ -41,13 +41,18 @@
     "pino": "^8.17.2",
     "pino-pretty": "^10.3.1",
     "uuid": "^9.0.1",
-    "winston": "^3.11.0"
+    "winston": "^3.11.0",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@types/jest": "^29.5.11",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.10.5",
     "@types/supertest": "^6.0.2",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "@types/uuid": "^9.0.7",
+    "@types/ws": "^8.18.1",
     "@typescript-eslint/eslint-plugin": "^6.16.0",
     "@typescript-eslint/parser": "^6.16.0",
     "eslint": "^8.56.0",

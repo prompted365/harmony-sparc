@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { Server } from '../src/server';
+import { Server } from '../api/server';
 
 describe('Health Check Endpoints', () => {
   let server: Server;

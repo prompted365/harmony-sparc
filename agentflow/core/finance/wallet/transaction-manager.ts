@@ -1,6 +1,6 @@
 // Transaction signing and broadcasting
 
-import { ethers } from 'ethers';
+import { ethers, Provider, Wallet, Transaction as EthersTransaction, parseUnits, parseEther, Interface, TransactionRequest as EthersTransactionRequest } from 'ethers';
 import { EventEmitter } from 'events';
 import {
   Transaction,
@@ -12,13 +12,13 @@ import {
 import { KeyManager } from './key-manager';
 
 export class TransactionManager extends EventEmitter {
-  private provider: ethers.Provider;
+  private provider: Provider;
   private keyManager: KeyManager;
   private gasOracle: GasOracle;
   private pendingTransactions: Map<string, Transaction> = new Map();
 
   constructor(
-    provider: ethers.Provider,
+    provider: Provider,
     keyManager: KeyManager
   ) {
     super();
@@ -48,14 +48,14 @@ export class TransactionManager extends EventEmitter {
         encryptedWallet.authTag
       );
 
-      const wallet = new ethers.Wallet(privateKey, this.provider);
+      const wallet = new Wallet(privateKey, this.provider);
 
       // Build transaction based on token type
       const tx = await this.buildTransaction(request, wallet);
       
       // Sign transaction
       const signedTx = await wallet.signTransaction(tx);
-      const parsedTx = ethers.Transaction.from(signedTx);
+      const parsedTx = EthersTransaction.from(signedTx);
 
       this.emit('transaction:signed', {
         hash: parsedTx.hash,
@@ -67,10 +67,14 @@ export class TransactionManager extends EventEmitter {
       return {
         rawTransaction: signedTx,
         hash: parsedTx.hash!,
-        signature: {
-          v: parsedTx.signature.v.toString(),
-          r: parsedTx.signature.r,
-          s: parsedTx.signature.s
+        signature: parsedTx.signature ? {
+          v: parsedTx.signature!.v.toString(),
+          r: parsedTx.signature!.r,
+          s: parsedTx.signature!.s
+        } : {
+          v: '0',
+          r: '0x0000000000000000000000000000000000000000000000000000000000000000',
+          s: '0x0000000000000000000000000000000000000000000000000000000000000000'
         }
       };
     } catch (error) {
@@ -129,9 +133,9 @@ export class TransactionManager extends EventEmitter {
    */
   private async buildTransaction(
     request: TransactionRequest,
-    wallet: ethers.Wallet
-  ): Promise<ethers.TransactionRequest> {
-    const baseTransaction: ethers.TransactionRequest = {
+    wallet: Wallet
+  ): Promise<EthersTransactionRequest> {
+    const baseTransaction: EthersTransactionRequest = {
       from: request.from,
       to: request.to,
       chainId: request.chainId || (await this.provider.getNetwork()).chainId,
@@ -143,14 +147,14 @@ export class TransactionManager extends EventEmitter {
       const gasData = await this.gasOracle.getOptimalGasPrice();
       baseTransaction.gasPrice = gasData.standard;
     } else {
-      baseTransaction.gasPrice = ethers.parseUnits(request.gasPrice, 'gwei');
+      baseTransaction.gasPrice = parseUnits(request.gasPrice, 'gwei');
     }
 
     switch (request.tokenType) {
       case TokenType.ETH:
         return {
           ...baseTransaction,
-          value: ethers.parseEther(request.value || '0'),
+          value: parseEther(request.value || '0'),
           gasLimit: request.gasLimit || 21000
         };
 
@@ -175,21 +179,21 @@ export class TransactionManager extends EventEmitter {
    * Build ERC20 token transfer transaction
    */
   private async buildERC20Transaction(
-    baseTx: ethers.TransactionRequest,
+    baseTx: EthersTransactionRequest,
     request: TransactionRequest
-  ): Promise<ethers.TransactionRequest> {
+  ): Promise<EthersTransactionRequest> {
     if (!request.contractAddress) {
       throw new Error('Contract address required for ERC20 transfer');
     }
 
-    const erc20Interface = new ethers.Interface([
+    const erc20Interface = new Interface([
       'function transfer(address to, uint256 amount) returns (bool)',
       'function approve(address spender, uint256 amount) returns (bool)'
     ]);
 
     const data = erc20Interface.encodeFunctionData('transfer', [
       request.to,
-      ethers.parseUnits(request.value || '0', 18) // Assuming 18 decimals
+      parseUnits(request.value || '0', 18) // Assuming 18 decimals
     ]);
 
     return {
@@ -204,14 +208,14 @@ export class TransactionManager extends EventEmitter {
    * Build ERC721 NFT transfer transaction
    */
   private async buildERC721Transaction(
-    baseTx: ethers.TransactionRequest,
+    baseTx: EthersTransactionRequest,
     request: TransactionRequest
-  ): Promise<ethers.TransactionRequest> {
+  ): Promise<EthersTransactionRequest> {
     if (!request.contractAddress || !request.tokenId) {
       throw new Error('Contract address and token ID required for NFT transfer');
     }
 
-    const erc721Interface = new ethers.Interface([
+    const erc721Interface = new Interface([
       'function safeTransferFrom(address from, address to, uint256 tokenId) external',
       'function transferFrom(address from, address to, uint256 tokenId) external'
     ]);
@@ -234,14 +238,14 @@ export class TransactionManager extends EventEmitter {
    * Build ERC1155 multi-token transfer transaction
    */
   private async buildERC1155Transaction(
-    baseTx: ethers.TransactionRequest,
+    baseTx: EthersTransactionRequest,
     request: TransactionRequest
-  ): Promise<ethers.TransactionRequest> {
+  ): Promise<EthersTransactionRequest> {
     if (!request.contractAddress || !request.tokenId) {
       throw new Error('Contract address and token ID required for ERC1155 transfer');
     }
 
-    const erc1155Interface = new ethers.Interface([
+    const erc1155Interface = new Interface([
       'function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes data) external'
     ]);
 
@@ -327,7 +331,7 @@ export class TransactionManager extends EventEmitter {
       value: '0',
       nonce: pendingTx.nonce,
       gasPrice: (BigInt(pendingTx.gasPrice) * 150n / 100n).toString(), // 50% higher
-      gasLimit: 21000,
+      gasLimit: '21000',
       tokenType: TokenType.ETH
     };
 
@@ -353,14 +357,14 @@ export class TransactionManager extends EventEmitter {
  * Gas price oracle for optimal gas pricing
  */
 class GasOracle {
-  private provider: ethers.Provider;
+  private provider: Provider;
   private cache: {
     timestamp: number;
     data: any;
   } | null = null;
   private cacheLifetime = 30000; // 30 seconds
 
-  constructor(provider: ethers.Provider) {
+  constructor(provider: Provider) {
     this.provider = provider;
   }
 
@@ -377,7 +381,7 @@ class GasOracle {
 
     try {
       const feeData = await this.provider.getFeeData();
-      const basePrice = feeData.gasPrice || ethers.parseUnits('20', 'gwei');
+      const basePrice = feeData.gasPrice || parseUnits('20', 'gwei');
 
       const data = {
         slow: basePrice * 80n / 100n,      // 80% of base
@@ -395,10 +399,10 @@ class GasOracle {
     } catch (error) {
       // Fallback prices
       return {
-        slow: ethers.parseUnits('10', 'gwei'),
-        standard: ethers.parseUnits('20', 'gwei'),
-        fast: ethers.parseUnits('30', 'gwei'),
-        instant: ethers.parseUnits('50', 'gwei')
+        slow: parseUnits('10', 'gwei'),
+        standard: parseUnits('20', 'gwei'),
+        fast: parseUnits('30', 'gwei'),
+        instant: parseUnits('50', 'gwei')
       };
     }
   }

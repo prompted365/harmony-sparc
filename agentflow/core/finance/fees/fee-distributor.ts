@@ -66,8 +66,8 @@ export class FeeDistributor extends EventEmitter {
   private pendingDistributions: Map<string, FeeDistribution[]> = new Map();
   private processingBatches: Map<string, DistributionBatch> = new Map();
   private completedBatches: Map<string, DistributionBatch> = new Map();
-  private distributionStats: DistributionStats;
-  private stakingPool: StakingPool;
+  private distributionStats!: DistributionStats;
+  private stakingPool!: StakingPool;
   private processingTimer?: NodeJS.Timeout;
   private batchCounter = 0;
   private receipts: DistributionReceipt[] = [];

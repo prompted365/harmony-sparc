@@ -1,0 +1,100 @@
+adapters/qudag/crypto/crypto-manager.ts(325,66): error TS2345: Argument of type 'Uint8Array<ArrayBuffer>' is not assignable to parameter of type 'Buffer<ArrayBufferLike>'.
+adapters/qudag/examples/agentflow-integration.ts(143,63): error TS2345: Argument of type '{ type: any; amount: any; price: number; timestamp: number; }' is not assignable to parameter of type 'ResourceOrder'.
+adapters/qudag/examples/usage.ts(128,57): error TS2345: Argument of type '{ type: ResourceType; amount: number; price: number; timestamp: number; }' is not assignable to parameter of type 'ResourceOrder'.
+adapters/qudag/examples/usage.ts(144,61): error TS2345: Argument of type '{ type: ResourceType; amount: number; price: number; timestamp: number; }' is not assignable to parameter of type 'ResourceOrder'.
+adapters/qudag/exchange/exchange-manager.ts(63,17): error TS2724: '"/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers"' has no exported member named 'BigNumber'. Did you mean 'BigNumberish'?
+adapters/qudag/exchange/exchange-manager.ts(64,20): error TS2724: '"/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers"' has no exported member named 'BigNumber'. Did you mean 'BigNumberish'?
+adapters/qudag/exchange/exchange-manager.ts(65,20): error TS2724: '"/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers"' has no exported member named 'BigNumber'. Did you mean 'BigNumberish'?
+adapters/qudag/exchange/exchange-manager.ts(96,22): error TS2724: '"/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers"' has no exported member named 'BigNumber'. Did you mean 'BigNumberish'?
+adapters/qudag/exchange/exchange-manager.ts(109,28): error TS2724: '"/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers"' has no exported member named 'providers'. Did you mean 'Provider'?
+adapters/qudag/exchange/exchange-manager.ts(186,28): error TS2339: Property 'utils' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(206,34): error TS2339: Property 'providers' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(274,64): error TS2724: '"/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers"' has no exported member named 'BigNumber'. Did you mean 'BigNumberish'?
+adapters/qudag/exchange/exchange-manager.ts(276,21): error TS2339: Property 'BigNumber' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(283,21): error TS2339: Property 'BigNumber' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(333,26): error TS2339: Property 'utils' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(334,24): error TS2339: Property 'utils' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(339,32): error TS2339: Property 'utils' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(340,32): error TS2339: Property 'utils' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(376,9): error TS2561: Object literal may only specify known properties, but 'ethSignature' does not exist in type 'ResourceOrder'. Did you mean to write 'signature'?
+adapters/qudag/exchange/exchange-manager.ts(473,32): error TS2339: Property 'utils' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(496,32): error TS2339: Property 'wait' does not exist on type 'ContractTransaction'.
+adapters/qudag/exchange/exchange-manager.ts(502,9): error TS2353: Object literal may only specify known properties, and 'txHash' does not exist in type 'ResourceOrder'.
+adapters/qudag/exchange/exchange-manager.ts(556,78): error TS2724: '"/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers"' has no exported member named 'BigNumber'. Did you mean 'BigNumberish'?
+adapters/qudag/exchange/exchange-manager.ts(562,29): error TS2339: Property 'BigNumber' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(563,28): error TS2339: Property 'utils' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(572,26): error TS2339: Property 'utils' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(582,67): error TS2724: '"/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers"' has no exported member named 'BigNumber'. Did you mean 'BigNumberish'?
+adapters/qudag/exchange/exchange-manager.ts(584,21): error TS2339: Property 'BigNumber' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(589,31): error TS2339: Property 'BigNumber' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(590,30): error TS2339: Property 'utils' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(592,67): error TS2339: Property 'createOrder' does not exist on type 'BaseContractMethod<any[], any, any>'.
+adapters/qudag/exchange/exchange-manager.ts(602,21): error TS2339: Property 'BigNumber' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(856,31): error TS2339: Property 'utils' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(903,31): error TS2339: Property 'BigNumber' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(948,31): error TS2339: Property 'BigNumber' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(1000,41): error TS2339: Property 'BigNumber' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(1018,46): error TS2724: '"/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers"' has no exported member named 'BigNumber'. Did you mean 'BigNumberish'?
+adapters/qudag/exchange/exchange-manager.ts(1020,21): error TS2339: Property 'utils' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(1027,21): error TS2339: Property 'utils' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(1058,46): error TS2339: Property 'utils' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/exchange/exchange-manager.ts(1081,19): error TS2339: Property 'utils' does not exist on type 'typeof import("/Users/breydentaylor/cfc2/harmony-sparc/node_modules/ethers/lib.commonjs/ethers")'.
+adapters/qudag/network/network-manager.ts(246,79): error TS18046: 'error' is of type 'unknown'.
+api/docs/swagger.ts(7,26): error TS2307: Cannot find module 'swagger-jsdoc' or its corresponding type declarations.
+api/docs/swagger.ts(8,23): error TS2307: Cannot find module 'swagger-ui-express' or its corresponding type declarations.
+api/example.ts(6,10): error TS2305: Module '"./index"' has no exported member 'createApiServer'.
+api/example.ts(6,27): error TS2305: Module '"./index"' has no exported member 'createProductionApiServer'.
+api/example.ts(6,54): error TS2305: Module '"./index"' has no exported member 'createDevelopmentApiServer'.
+api/middleware/auth.ts(7,17): error TS7016: Could not find a declaration file for module 'jsonwebtoken'. '/Users/breydentaylor/cfc2/harmony-sparc/node_modules/jsonwebtoken/index.js' implicitly has an 'any' type.
+api/middleware/cache.ts(225,33): error TS2322: Type '{}' is not assignable to type 'CacheOptions & { keyGenerator?: ((req: ApiRequest) => string) | undefined; condition?: ((req: ApiRequest, res: Response<any, Record<string, any>>) => boolean) | undefined; onHit?: ((req: ApiRequest, res: Response<...>, data: any) => void) | undefined; onMiss?: ((req: ApiRequest, res: Response<...>) => void) | undefi...'.
+api/middleware/rate-limit.ts(213,37): error TS2322: Type '{}' is not assignable to type 'RateLimitOptions & { strategy?: "fixed" | "token" | "sliding" | "leaky" | undefined; skipSuccessfulRequests?: boolean | undefined; skipFailedRequests?: boolean | undefined; onLimitReached?: ((req: ApiRequest, res: Response<...>) => void) | undefined; }'.
+api/middleware/validation.ts(26,3): error TS2322: Type '{ field: string; message: string; code: "custom" | "invalid_type" | "invalid_literal" | "unrecognized_keys" | "invalid_union" | "invalid_union_discriminator" | "invalid_enum_value" | ... 8 more ... | "not_finite"; received: unknown; expected: unknown; }[]' is not assignable to type 'ValidationErrorDetail[]'.
+api/routes/qudag.ts(37,11): error TS2564: Property 'config' has no initializer and is not definitely assigned in the constructor.
+api/routes/qudag.ts(157,11): error TS2741: Property 'signature' is missing in type '{ type: ResourceType; amount: number; price: number; timestamp: number; }' but required in type 'ResourceOrder'.
+api/routes/qudag.ts(207,7): error TS2304: Cannot find name 'logger'.
+api/routes/qudag.ts(292,7): error TS2353: Object literal may only specify known properties, and 'quantumResistant' does not exist in type 'ApiMeta'.
+api/routes/qudag.ts(314,7): error TS2353: Object literal may only specify known properties, and 'quantumResistant' does not exist in type 'ApiMeta'.
+api/routes/qudag.ts(336,7): error TS2353: Object literal may only specify known properties, and 'quantumResistant' does not exist in type 'ApiMeta'.
+api/routes/qudag.ts(363,9): error TS2353: Object literal may only specify known properties, and 'quantumResistant' does not exist in type 'ApiMeta'.
+api/routes/qudag.ts(395,7): error TS2353: Object literal may only specify known properties, and 'quantumResistant' does not exist in type 'ApiMeta'.
+api/routes/qudag.ts(417,7): error TS2353: Object literal may only specify known properties, and 'quantumResistant' does not exist in type 'ApiMeta'.
+api/routes/qudag.ts(462,7): error TS2353: Object literal may only specify known properties, and 'quantumResistant' does not exist in type 'ApiMeta'.
+api/routes/workflows.ts(63,18): error TS2554: Expected 1-2 arguments, but got 0.
+api/routes/workflows.ts(65,16): error TS2554: Expected 2-3 arguments, but got 1.
+api/routes/workflows.ts(81,32): error TS2339: Property 'getAllWorkflows' does not exist on type 'WorkflowRegistry'.
+api/routes/workflows.ts(85,23): error TS7006: Parameter 'a' implicitly has an 'any' type.
+api/routes/workflows.ts(85,26): error TS7006: Parameter 'b' implicitly has an 'any' type.
+api/routes/workflows.ts(123,29): error TS2339: Property 'getWorkflow' does not exist on type 'WorkflowRegistry'.
+api/routes/workflows.ts(175,14): error TS2339: Property 'registerWorkflow' does not exist on type 'WorkflowRegistry'.
+api/routes/workflows.ts(180,58): error TS2345: Argument of type '{}' is not assignable to parameter of type 'WorkflowContext'.
+api/routes/workflows.ts(211,31): error TS2339: Property 'getWorkflow' does not exist on type 'WorkflowRegistry'.
+api/routes/workflows.ts(248,14): error TS2339: Property 'updateWorkflow' does not exist on type 'WorkflowRegistry'.
+api/routes/workflows.ts(271,29): error TS2339: Property 'getWorkflow' does not exist on type 'WorkflowRegistry'.
+api/routes/workflows.ts(283,35): error TS2339: Property 'getInstancesByStatus' does not exist on type 'ExecutionEngine'.
+api/routes/workflows.ts(284,13): error TS7006: Parameter 'instance' implicitly has an 'any' type.
+api/routes/workflows.ts(298,12): error TS2339: Property 'unregisterWorkflow' does not exist on type 'WorkflowRegistry'.
+api/routes/workflows.ts(324,31): error TS2339: Property 'getWorkflow' does not exist on type 'WorkflowRegistry'.
+api/routes/workflows.ts(336,47): error TS2345: Argument of type 'Record<string, any>' is not assignable to parameter of type 'WorkflowContext'.
+api/routes/workflows.ts(402,31): error TS2339: Property 'getWorkflow' does not exist on type 'WorkflowRegistry'.
+api/routes/workflows.ts(414,33): error TS2339: Property 'getInstances' does not exist on type 'ExecutionEngine'.
+api/routes/workflows.ts(415,15): error TS7006: Parameter 'instance' implicitly has an 'any' type.
+api/routes/workflows.ts(416,14): error TS7006: Parameter 'a' implicitly has an 'any' type.
+api/routes/workflows.ts(416,17): error TS7006: Parameter 'b' implicitly has an 'any' type.
+api/routes/workflows.ts(447,29): error TS2339: Property 'getWorkflow' does not exist on type 'WorkflowRegistry'.
+api/routes/workflows.ts(480,27): error TS2339: Property 'getInstance' does not exist on type 'ExecutionEngine'.
+api/routes/workflows.ts(513,27): error TS2339: Property 'getInstance' does not exist on type 'ExecutionEngine'.
+api/routes/workflows.ts(546,27): error TS2339: Property 'getInstance' does not exist on type 'ExecutionEngine'.
+api/scripts/bottleneck-analysis.ts(222,28): error TS18046: 'error' is of type 'unknown'.
+api/scripts/generate-performance-report.ts(146,64): error TS18046: 'error' is of type 'unknown'.
+api/utils/async-handler.ts(266,23): error TS2345: Argument of type '{}' is not assignable to parameter of type 'Error'.
+core/finance/fees/fee-api.ts(139,41): error TS2339: Property 'getCalculator' does not exist on type 'FeeEngine'.
+core/finance/fees/fee-distributor.ts(69,11): error TS2564: Property 'distributionStats' has no initializer and is not definitely assigned in the constructor.
+core/finance/fees/fee-distributor.ts(70,11): error TS2564: Property 'stakingPool' has no initializer and is not definitely assigned in the constructor.
+core/finance/fees/fee-engine.test.ts(480,77): error TS2345: Argument of type '{ id: string; from: string; to: string; amount: bigint; token: string; priority: string; timestamp: number; }' is not assignable to parameter of type 'PaymentRequest'.
+core/finance/fees/fee-engine.test.ts(501,77): error TS2345: Argument of type '{ id: string; from: string; to: string; amount: bigint; token: string; priority: string; timestamp: number; }' is not assignable to parameter of type 'PaymentRequest'.
+core/finance/fees/fee-engine.ts(69,11): error TS2564: Property 'analytics' has no initializer and is not definitely assigned in the constructor.
+core/finance/fees/fee-engine.ts(70,11): error TS2564: Property 'networkConditions' has no initializer and is not definitely assigned in the constructor.
+core/finance/payment/api/payment-api.ts(42,32): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+core/finance/payment/api/payment-routes.ts(58,11): error TS2564: Property 'paymentProcessor' has no initializer and is not definitely assigned in the constructor.
+core/finance/payment/api/payment-routes.ts(59,11): error TS2564: Property 'escrowManager' has no initializer and is not definitely assigned in the constructor.
+core/finance/payment/api/payment-routes.ts(60,11): error TS2564: Property 'webhookManager' has no initializer and is not definitely assigned in the constructor.

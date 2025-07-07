@@ -84,7 +84,7 @@ interface PeerInfo {
   connection?: Connection;
 }
 
-interface NetworkMetrics {
+export interface NetworkMetrics {
   totalMessages: number;
   successfulMessages: number;
   failedMessages: number;
@@ -243,7 +243,8 @@ export class NetworkManager extends EventEmitter {
       try {
         await this.connectToPeer(nodeAddr);
       } catch (error) {
-        logger.warn('Failed to connect to bootstrap node', { nodeAddr, error: error.message });
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.warn('Failed to connect to bootstrap node', { nodeAddr, error: err.message });
       }
     });
     

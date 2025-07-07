@@ -1,0 +1,153 @@
+{
+  "total_errors": 131,
+  "categories": {
+    "ethers_v6_migration": {
+      "count": 27,
+      "description": "Breaking changes from ethers.js v5 to v6",
+      "subcategories": {
+        "bigint_issues": [
+          "adapters/qudag/exchange/exchange-manager.ts:533",
+          "core/finance/payment/fees/fee-calculator.ts:230"
+        ],
+        "transaction_receipt_changes": [
+          "adapters/qudag/exchange/exchange-manager.ts:502",
+          "adapters/qudag/exchange/exchange-manager.ts:514",
+          "adapters/qudag/exchange/exchange-manager.ts:528"
+        ],
+        "transaction_response_signature": [
+          "adapters/qudag/exchange/exchange-manager.ts:1003-1006",
+          "core/finance/wallet/transaction-manager.ts:71-73"
+        ],
+        "provider_api": [
+          "adapters/qudag/exchange/exchange-manager.ts:1024"
+        ],
+        "utils_missing": [
+          "core/finance/payment/processors/multi-token-processor.ts:7"
+        ],
+        "contract_methods": [
+          "adapters/qudag/exchange/exchange-manager.ts:592",
+          "core/finance/payment/escrow/escrow-contract.ts:42,73,86,121,165",
+          "core/finance/payment/processors/multi-token-processor.ts:128,176,178,264"
+        ]
+      }
+    },
+    "import_module_errors": {
+      "count": 13,
+      "description": "Missing or incorrect module exports",
+      "files": {
+        "api/example.ts": ["createApiServer", "createProductionApiServer", "createDevelopmentApiServer"],
+        "index.ts": [
+          "api/server default export",
+          "QudagAdapter naming",
+          "CryptoManager, NetworkManager, DomainManager, ExchangeManager, RoutingManager exports",
+          "ApiError, PaymentRequest, Transaction, ExecutionOptions duplicates"
+        ]
+      }
+    },
+    "type_annotation_errors": {
+      "count": 42,
+      "description": "Missing type annotations and type mismatches",
+      "implicit_any": [
+        "api/routes/workflows.ts:85,284,415,416,225",
+        "core/workflows/execution/execution-engine.ts:412"
+      ],
+      "type_mismatches": [
+        "adapters/qudag/crypto/crypto-manager.ts:325",
+        "adapters/qudag/examples/agentflow-integration.ts:143",
+        "adapters/qudag/examples/usage.ts:128,144",
+        "core/finance/fees/fee-engine.test.ts:480,501",
+        "api/routes/workflows.ts:180,336",
+        "api/middleware/cache.ts:225",
+        "api/middleware/rate-limit.ts:213"
+      ],
+      "property_mismatches": [
+        "adapters/qudag/exchange/exchange-manager.ts:376,502",
+        "api/routes/qudag.ts:157,292,314,336,363,395,417,462"
+      ]
+    },
+    "error_handling": {
+      "count": 15,
+      "description": "Catch blocks with 'unknown' type errors",
+      "files": [
+        "adapters/qudag/network/network-manager.ts:246",
+        "api/scripts/bottleneck-analysis.ts:222",
+        "api/scripts/generate-performance-report.ts:146",
+        "core/finance/wallet/wallet-api.ts:61,102,123,144,183,209,230,256,278,300,346,359,386,432",
+        "tests/run-integration-tests.ts:106"
+      ]
+    },
+    "missing_properties": {
+      "count": 34,
+      "description": "Methods and properties not found on types",
+      "workflow_registry": [
+        "api/routes/workflows.ts:81,123,175,211,248,271,298,324,402,447"
+      ],
+      "execution_engine": [
+        "api/routes/workflows.ts:283,414,480,513,546"
+      ],
+      "other": [
+        "core/finance/fees/fee-api.ts:139",
+        "core/finance/wallet/key-manager.ts:93,125"
+      ]
+    },
+    "uninitialized_properties": {
+      "count": 9,
+      "description": "Class properties without initializers",
+      "files": [
+        "api/routes/qudag.ts:37",
+        "core/finance/fees/fee-distributor.ts:69,70",
+        "core/finance/fees/fee-engine.ts:69,70",
+        "core/finance/payment/api/payment-routes.ts:58,59,60,61"
+      ]
+    },
+    "miscellaneous": {
+      "count": 9,
+      "description": "Various other errors",
+      "undefined_references": [
+        "api/routes/qudag.ts:207",
+        "api/routes/workflows.ts:225"
+      ],
+      "argument_count": [
+        "api/routes/workflows.ts:63,65"
+      ],
+      "null_checks": [
+        "adapters/qudag/exchange/exchange-manager.ts:502,514,519,520,528,533"
+      ],
+      "other": [
+        "core/workflows/events/event-bus.ts:56"
+      ]
+    }
+  },
+  "priority_fixes": [
+    {
+      "priority": "HIGH",
+      "category": "ethers_v6_migration",
+      "action": "Update all ethers.js code to v6 API",
+      "files_affected": 27
+    },
+    {
+      "priority": "HIGH", 
+      "category": "import_module_errors",
+      "action": "Fix module exports and imports",
+      "files_affected": 13
+    },
+    {
+      "priority": "MEDIUM",
+      "category": "error_handling",
+      "action": "Add proper error type guards",
+      "files_affected": 15
+    },
+    {
+      "priority": "MEDIUM",
+      "category": "uninitialized_properties",
+      "action": "Initialize class properties in constructors",
+      "files_affected": 9
+    },
+    {
+      "priority": "LOW",
+      "category": "type_annotation_errors",
+      "action": "Add missing type annotations",
+      "files_affected": 42
+    }
+  ]
+}

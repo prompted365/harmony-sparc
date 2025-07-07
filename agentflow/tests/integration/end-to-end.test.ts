@@ -4,8 +4,8 @@
  */
 
 import request from 'supertest';
-import { Server } from '../../src/server';
-import { ethers } from 'ethers';
+import { Server } from '../../api/server';
+import { ethers, isAddress, Wallet } from 'ethers';
 
 describe('End-to-End System Integration Tests', () => {
   let server: Server;
@@ -33,7 +33,7 @@ describe('End-to-End System Integration Tests', () => {
         .expect(201);
 
       walletAddress = response.body.data.address;
-      expect(ethers.isAddress(walletAddress)).toBe(true);
+      expect(isAddress(walletAddress)).toBe(true);
 
       // Verify wallet has initial balances
       const balanceResponse = await request(app)
@@ -193,7 +193,7 @@ describe('End-to-End System Integration Tests', () => {
           agentId,
           paymentAmount: 10,
           targetToken: 'USDC',
-          recipientAddress: ethers.Wallet.createRandom().address
+          recipientAddress: Wallet.createRandom().address
         },
         options: {
           async: false,

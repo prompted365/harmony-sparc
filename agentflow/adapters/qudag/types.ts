@@ -90,6 +90,11 @@ export interface ResourceOrder {
   timestamp: number;
   signature: Uint8Array;
   status?: OrderStatus;
+  // Blockchain-specific fields (optional for blockchain integration)
+  ethSignature?: string;
+  orderHash?: string;
+  creator?: string;
+  txHash?: string;
 }
 
 export enum OrderStatus {
@@ -166,9 +171,10 @@ export interface QuDAGTransaction {
 
 export interface TransactionReceipt {
   txHash: string;
-  status: 'success' | 'failed';
+  transactionHash: string; // ethers v6 uses this property name
+  status: 'success' | 'failed' | number; // ethers v6 may return numeric status
   blockNumber: number;
-  gasUsed?: number;
+  gasUsed?: number | bigint; // ethers v6 uses bigint
   logs: TransactionLog[];
 }
 

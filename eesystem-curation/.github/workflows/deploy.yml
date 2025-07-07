@@ -1,0 +1,295 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches: [ main, production ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    
+    - name: Install Python dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+        pip install -r requirements.prod.txt
+    
+    - name: Install Node.js dependencies
+      run: |
+        npm install
+        cd frontend && npm install
+    
+    - name: Run Python linting
+      run: |
+        cd backend
+        python -m flake8 app/
+        python -m black --check app/
+        python -m isort --check-only app/
+    
+    - name: Run JavaScript linting
+      run: |
+        cd frontend
+        npm run lint
+    
+    - name: Run Python tests
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
+        REDIS_URL: redis://localhost:6379
+        JWT_SECRET: test-secret
+        ENVIRONMENT: test
+      run: |
+        cd backend
+        python -m pytest --cov=app --cov-report=xml --cov-report=html
+    
+    - name: Run frontend tests
+      run: |
+        cd frontend
+        npm run test -- --coverage --watchAll=false
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./backend/coverage.xml
+        flags: backend
+    
+    - name: Build backend Docker image
+      run: |
+        docker build -f backend/Dockerfile.prod -t eesystem-backend:test ./backend
+    
+    - name: Build frontend Docker image
+      run: |
+        docker build -f frontend/Dockerfile.prod -t eesystem-frontend:test ./frontend
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Run security scan on backend
+      uses: pypa/gh-action-pip-audit@v1.0.8
+      with:
+        inputs: backend/requirements.prod.txt
+    
+    - name: Run security scan on frontend
+      run: |
+        cd frontend
+        npm audit --audit-level=moderate
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [test, security]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install Railway CLI
+      run: npm install -g @railway/cli
+    
+    - name: Deploy backend to staging
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_STAGING_TOKEN }}
+      run: |
+        railway environment staging
+        railway deploy --service backend --detach
+    
+    - name: Deploy frontend to staging
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_STAGING_TOKEN }}
+      run: |
+        railway environment staging
+        railway deploy --service frontend --detach
+    
+    - name: Run smoke tests
+      env:
+        STAGING_API_URL: ${{ secrets.STAGING_API_URL }}
+      run: |
+        # Wait for deployment
+        sleep 60
+        
+        # Basic smoke tests
+        curl -f $STAGING_API_URL/health
+        curl -f $STAGING_API_URL/health/ready
+        
+        # Test API endpoints
+        curl -f $STAGING_API_URL/api/v1/health
+
+  deploy-production:
+    name: Deploy to Production
+    needs: [deploy-staging]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/production' && github.event_name == 'push'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install Railway CLI
+      run: npm install -g @railway/cli
+    
+    - name: Deploy backend to production
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_PRODUCTION_TOKEN }}
+      run: |
+        railway environment production
+        railway deploy --service backend --detach
+    
+    - name: Deploy frontend to production
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_PRODUCTION_TOKEN }}
+      run: |
+        railway environment production
+        railway deploy --service frontend --detach
+    
+    - name: Run production health checks
+      env:
+        PRODUCTION_API_URL: ${{ secrets.PRODUCTION_API_URL }}
+      run: |
+        # Wait for deployment
+        sleep 90
+        
+        # Health checks
+        curl -f $PRODUCTION_API_URL/health
+        curl -f $PRODUCTION_API_URL/health/ready
+        curl -f $PRODUCTION_API_URL/health/detailed
+    
+    - name: Notify deployment success
+      uses: 8398a7/action-slack@v3
+      if: success()
+      with:
+        status: success
+        text: '🚀 Production deployment successful!'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+    
+    - name: Notify deployment failure
+      uses: 8398a7/action-slack@v3
+      if: failure()
+      with:
+        status: failure
+        text: '❌ Production deployment failed!'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  performance-test:
+    name: Performance Testing
+    needs: [deploy-staging]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install k6
+      run: |
+        curl https://github.com/grafana/k6/releases/download/v0.47.0/k6-v0.47.0-linux-amd64.tar.gz -L | tar xvz --strip-components 1
+    
+    - name: Run performance tests
+      env:
+        STAGING_API_URL: ${{ secrets.STAGING_API_URL }}
+      run: |
+        cat > performance-test.js << 'EOF'
+        import http from 'k6/http';
+        import { check, sleep } from 'k6';
+
+        export let options = {
+          stages: [
+            { duration: '30s', target: 10 },
+            { duration: '1m', target: 20 },
+            { duration: '30s', target: 0 },
+          ],
+        };
+
+        export default function () {
+          let response = http.get(`${__ENV.STAGING_API_URL}/health`);
+          check(response, {
+            'status is 200': (r) => r.status === 200,
+            'response time < 500ms': (r) => r.timings.duration < 500,
+          });
+          sleep(1);
+        }
+        EOF
+        
+        ./k6 run performance-test.js
+
+  database-migration:
+    name: Database Migration
+    needs: [test]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/production' && github.event_name == 'push'
+    environment: production
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install Railway CLI
+      run: npm install -g @railway/cli
+    
+    - name: Run database migrations
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_PRODUCTION_TOKEN }}
+      run: |
+        railway environment production
+        railway run --service backend alembic upgrade head
+    
+    - name: Verify migration
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_PRODUCTION_TOKEN }}
+      run: |
+        railway run --service backend alembic current

@@ -5,7 +5,7 @@
 
 import { Router, Response } from 'express';
 import { z } from 'zod';
-import { ethers } from 'ethers';
+import { Wallet, isAddress } from 'ethers';
 import { 
   ApiRequest, 
   ApiResponse, 
@@ -13,7 +13,6 @@ import {
   TokenBalance,
   Transaction,
   PaymentRequest,
-  PaginationParams,
   ApiErrorCode 
 } from '../types';
 import { asyncHandler } from '../utils/async-handler';
@@ -40,13 +39,11 @@ interface TokenInfo {
 class FinancialManager {
   private wallets: Map<string, WalletData> = new Map();
   private tokenInfo: Map<string, TokenInfo> = new Map();
-  private provider: ethers.JsonRpcProvider;
 
   constructor() {
     // Initialize with mock data
     this.initializeTokens();
     this.initializeWallets();
-    this.provider = new ethers.JsonRpcProvider('https://mainnet.infura.io/v3/dummy');
   }
 
   private initializeTokens(): void {
@@ -65,7 +62,7 @@ class FinancialManager {
 
   private initializeWallets(): void {
     // Create a demo wallet
-    const wallet = ethers.Wallet.createRandom();
+    const wallet = Wallet.createRandom();
     const walletData: WalletData = {
       address: wallet.address,
       privateKey: wallet.privateKey,
@@ -110,7 +107,7 @@ class FinancialManager {
   }
 
   private generateRandomAddress(): string {
-    return ethers.Wallet.createRandom().address;
+    return Wallet.createRandom().address;
   }
 
   getWallet(address: string): WalletData | undefined {
@@ -122,7 +119,7 @@ class FinancialManager {
   }
 
   createWallet(): WalletData {
-    const wallet = ethers.Wallet.createRandom();
+    const wallet = Wallet.createRandom();
     const walletData: WalletData = {
       address: wallet.address,
       privateKey: wallet.privateKey,
@@ -229,7 +226,7 @@ class FinancialManager {
     return 20 + Math.random() * 30;
   }
 
-  async estimateGas(transaction: Partial<Transaction>): Promise<number> {
+  async estimateGas(_transaction: Partial<Transaction>): Promise<number> {
     // Mock gas estimation
     return 21000 + Math.random() * 50000;
   }
@@ -247,10 +244,6 @@ const paymentSchema = z.object({
 const paginationSchema = z.object({
   page: z.number().positive().default(1),
   limit: z.number().positive().max(100).default(20)
-});
-
-const addressSchema = z.object({
-  address: z.string().regex(/^0x[a-fA-F0-9]{40}$/)
 });
 
 // Initialize financial manager
@@ -324,28 +317,30 @@ router.post('/wallets', asyncHandler(async (req: ApiRequest, res: Response) => {
  * GET /wallets/:address
  * Get wallet information
  */
-router.get('/wallets/:address', asyncHandler(async (req: ApiRequest, res: Response) => {
+router.get('/wallets/:address', asyncHandler(async (req: ApiRequest, res: Response): Promise<void> => {
   const { address } = req.params;
 
-  if (!ethers.isAddress(address)) {
-    return res.status(400).json({
+  if (!isAddress(address)) {
+    res.status(400).json({
       success: false,
       error: {
         code: ApiErrorCode.INVALID_REQUEST,
         message: 'Invalid wallet address'
       }
     } as ApiResponse);
+    return;
   }
 
   const walletInfo = financialManager.getWalletInfo(address);
   if (!walletInfo) {
-    return res.status(404).json({
+    res.status(404).json({
       success: false,
       error: {
         code: ApiErrorCode.NOT_FOUND,
         message: `Wallet ${address} not found`
       }
     } as ApiResponse);
+    return;
   }
 
   const response: ApiResponse<WalletInfo> = {
@@ -365,28 +360,30 @@ router.get('/wallets/:address', asyncHandler(async (req: ApiRequest, res: Respon
  * GET /wallets/:address/balance
  * Get wallet balance
  */
-router.get('/wallets/:address/balance', asyncHandler(async (req: ApiRequest, res: Response) => {
+router.get('/wallets/:address/balance', asyncHandler(async (req: ApiRequest, res: Response): Promise<void> => {
   const { address } = req.params;
 
-  if (!ethers.isAddress(address)) {
-    return res.status(400).json({
+  if (!isAddress(address)) {
+    res.status(400).json({
       success: false,
       error: {
         code: ApiErrorCode.INVALID_REQUEST,
         message: 'Invalid wallet address'
       }
     } as ApiResponse);
+    return;
   }
 
   const walletInfo = financialManager.getWalletInfo(address);
   if (!walletInfo) {
-    return res.status(404).json({
+    res.status(404).json({
       success: false,
       error: {
         code: ApiErrorCode.NOT_FOUND,
         message: `Wallet ${address} not found`
       }
     } as ApiResponse);
+    return;
   }
 
   const response: ApiResponse = {
@@ -412,18 +409,19 @@ router.get('/wallets/:address/balance', asyncHandler(async (req: ApiRequest, res
  */
 router.post('/wallets/:address/send',
   validateRequest({ body: paymentSchema }),
-  asyncHandler(async (req: ApiRequest, res: Response) => {
+  asyncHandler(async (req: ApiRequest, res: Response): Promise<void> => {
     const { address } = req.params;
     const payment = req.body as PaymentRequest;
 
-    if (!ethers.isAddress(address)) {
-      return res.status(400).json({
+    if (!isAddress(address)) {
+      res.status(400).json({
         success: false,
         error: {
           code: ApiErrorCode.INVALID_REQUEST,
           message: 'Invalid wallet address'
         }
       } as ApiResponse);
+      return;
     }
 
     try {
@@ -458,19 +456,20 @@ router.post('/wallets/:address/send',
  */
 router.get('/wallets/:address/transactions', 
   validateRequest({ query: paginationSchema }),
-  asyncHandler(async (req: ApiRequest, res: Response) => {
+  asyncHandler(async (req: ApiRequest, res: Response): Promise<void> => {
     const { address } = req.params;
     const { page, limit } = req.query as any;
     const offset = (page - 1) * limit;
 
-    if (!ethers.isAddress(address)) {
-      return res.status(400).json({
+    if (!isAddress(address)) {
+      res.status(400).json({
         success: false,
         error: {
           code: ApiErrorCode.INVALID_REQUEST,
           message: 'Invalid wallet address'
         }
       } as ApiResponse);
+      return;
     }
 
     const allTransactions = financialManager.getTransactionHistory(address, 1000);
@@ -520,18 +519,19 @@ router.get('/tokens', asyncHandler(async (req: ApiRequest, res: Response) => {
  * GET /tokens/:symbol
  * Get token information
  */
-router.get('/tokens/:symbol', asyncHandler(async (req: ApiRequest, res: Response) => {
+router.get('/tokens/:symbol', asyncHandler(async (req: ApiRequest, res: Response): Promise<void> => {
   const { symbol } = req.params;
 
   const tokenInfo = financialManager.getTokenInfo(symbol.toUpperCase());
   if (!tokenInfo) {
-    return res.status(404).json({
+    res.status(404).json({
       success: false,
       error: {
         code: ApiErrorCode.NOT_FOUND,
         message: `Token ${symbol} not found`
       }
     } as ApiResponse);
+    return;
   }
 
   const response: ApiResponse = {
@@ -612,28 +612,30 @@ router.post('/gas/estimate',
  * GET /portfolio/:address
  * Get portfolio analysis
  */
-router.get('/portfolio/:address', asyncHandler(async (req: ApiRequest, res: Response) => {
+router.get('/portfolio/:address', asyncHandler(async (req: ApiRequest, res: Response): Promise<void> => {
   const { address } = req.params;
 
-  if (!ethers.isAddress(address)) {
-    return res.status(400).json({
+  if (!isAddress(address)) {
+    res.status(400).json({
       success: false,
       error: {
         code: ApiErrorCode.INVALID_REQUEST,
         message: 'Invalid wallet address'
       }
     } as ApiResponse);
+    return;
   }
 
   const walletInfo = financialManager.getWalletInfo(address);
   if (!walletInfo) {
-    return res.status(404).json({
+    res.status(404).json({
       success: false,
       error: {
         code: ApiErrorCode.NOT_FOUND,
         message: `Wallet ${address} not found`
       }
     } as ApiResponse);
+    return;
   }
 
   // Calculate portfolio metrics

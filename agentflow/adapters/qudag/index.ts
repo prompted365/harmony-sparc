@@ -13,11 +13,9 @@ import {
   ResourceExchangeResult,
   ConnectionStatus,
   HealthCheck,
-  QuDAGEvent,
   QuDAGEventType,
   QuDAGError,
   QuDAGErrorCode,
-  ResourceType,
   ResourceBalance
 } from './types';
 import { CryptoManager } from './crypto/crypto-manager';
@@ -441,7 +439,7 @@ export class QuDAGAdapter extends EventEmitter {
   private async testDAGConsensus(): Promise<boolean> {
     try {
       // Test basic DAG operations
-      const tips = await this.getDAGTips();
+      await this.getDAGTips();
       return true; // Simplified test
     } catch (error) {
       logger.error('DAG consensus test failed', error);
@@ -712,3 +710,10 @@ export class QuDAGAdapter extends EventEmitter {
 // Export types and adapter
 export * from './types';
 export default QuDAGAdapter;
+
+// Export managers for external use
+export { CryptoManager } from './crypto/crypto-manager';
+export { NetworkManager } from './network/network-manager';
+export { ExchangeManager } from './exchange/exchange-manager';
+export { DomainManager } from './domain/domain-manager';
+export { RoutingManager } from './routing/routing-manager';

@@ -1,0 +1,42 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[env]
+# Environment variables that Railway should set
+PORT = { default = "8000" }
+HOST = { default = "0.0.0.0" }
+DATABASE_URL = { from = "DATABASE_URL" }
+REDIS_URL = { from = "REDIS_URL" }
+SECRET_KEY = { from = "SECRET_KEY" }
+
+# AstraDB Configuration
+ASTRADB_APPLICATION_TOKEN = { from = "ASTRADB_APPLICATION_TOKEN" }
+ASTRADB_DATABASE_ID = { from = "ASTRADB_DATABASE_ID" }
+ASTRADB_KEYSPACE = { default = "eesystem_curation" }
+
+# API Keys
+OPENAI_API_KEY = { from = "OPENAI_API_KEY" }
+ANTHROPIC_API_KEY = { from = "ANTHROPIC_API_KEY" }
+
+# Application Settings
+DEBUG = { default = "false" }
+LOG_LEVEL = { default = "INFO" }
+ALLOWED_ORIGINS = { default = "https://*.railway.app,https://localhost:3000" }
+
+# Security
+ALGORITHM = { default = "HS256" }
+ACCESS_TOKEN_EXPIRE_MINUTES = { default = "30" }
+
+# File Upload
+MAX_FILE_SIZE = { default = "10485760" }  # 10MB in bytes
+UPLOAD_PATH = { default = "uploads" }
+
+# Celery (if using background tasks)
+CELERY_BROKER_URL = { from = "REDIS_URL" }
+CELERY_RESULT_BACKEND = { from = "REDIS_URL" }

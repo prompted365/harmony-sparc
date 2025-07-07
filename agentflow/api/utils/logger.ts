@@ -10,7 +10,7 @@ export enum LogLevel {
   ERROR = 3
 }
 
-class Logger {
+export class Logger {
   private level: LogLevel = LogLevel.INFO;
   private context: string;
 

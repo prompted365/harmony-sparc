@@ -4,8 +4,8 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
-import { WorkflowDefinition, WorkflowInstance, WorkflowStatus } from '../../core/workflows/types';
-import { QuDAGTransaction, ResourceBalance } from '../../adapters/qudag/types';
+import { WorkflowDefinition } from '../../core/workflows/types';
+import { ResourceBalance } from '../../adapters/qudag/types';
 
 // API Response Types
 export interface ApiResponse<T = any> {
@@ -27,6 +27,7 @@ export interface ApiMeta {
   version: string;
   requestId: string;
   pagination?: PaginationMeta;
+  quantumResistant?: boolean;
 }
 
 export interface PaginationMeta {

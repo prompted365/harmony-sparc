@@ -226,15 +226,13 @@ export class FeeCalculator {
     const dynamicRate = this.getDynamicFeeRate(token);
     
     // Calculate min/max based on potential network conditions
-    const minFee = Math.max(
-      this.calculateTotalFee(amount, this.config.feePercentage * 0.5),
-      Number(this.config.minFee)
-    );
+    const minFee = this.calculateTotalFee(amount, this.config.feePercentage * 0.5);
+    const minFeeWithFloor = minFee > this.config.minFee ? minFee : this.config.minFee;
     
     const maxFee = this.calculateTotalFee(amount, dynamicRate * 2);
 
     return {
-      minFee: BigInt(minFee),
+      minFee: minFeeWithFloor,
       maxFee: BigInt(maxFee),
       estimatedFee: breakdown.totalFee,
       breakdown

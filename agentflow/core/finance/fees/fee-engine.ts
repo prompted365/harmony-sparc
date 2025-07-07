@@ -66,8 +66,8 @@ export interface FeeOptimization {
 export class FeeEngine extends EventEmitter {
   private calculator: FeeCalculator;
   private config: FeeEngineConfig;
-  private analytics: FeeAnalytics;
-  private networkConditions: NetworkConditions;
+  private analytics!: FeeAnalytics;
+  private networkConditions!: NetworkConditions;
   private distributionQueue: FeeDistribution[] = [];
   private performanceMetrics: Map<string, number> = new Map();
   private feeCache: Map<string, { fee: FeeBreakdown; timestamp: number }> = new Map();
@@ -550,5 +550,12 @@ export class FeeEngine extends EventEmitter {
     const optimalGasPrice = 30; // 30 gwei baseline
     
     return Math.min(100, Math.max(0, 100 - (currentGasPrice - optimalGasPrice) * 2));
+  }
+
+  /**
+   * Get the fee calculator instance
+   */
+  getCalculator(): FeeCalculator {
+    return this.calculator;
   }
 }

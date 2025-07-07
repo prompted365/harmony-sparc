@@ -1,17 +1,17 @@
 // Balance tracking and history management
 
-import { ethers } from 'ethers';
+import { ethers, Provider, Contract, formatUnits } from 'ethers';
 import { EventEmitter } from 'events';
 import { AssetBalance, TokenType, Transaction, WalletStats } from './types';
 
 export class BalanceTracker extends EventEmitter {
-  private provider: ethers.Provider;
+  private provider: Provider;
   private balances: Map<string, Map<string, AssetBalance>> = new Map();
   private priceOracle: PriceOracle;
   private updateInterval: NodeJS.Timeout | null = null;
   private trackedAddresses: Set<string> = new Set();
 
-  constructor(provider: ethers.Provider) {
+  constructor(provider: Provider) {
     super();
     this.provider = provider;
     this.priceOracle = new PriceOracle();
@@ -198,7 +198,7 @@ export class BalanceTracker extends EventEmitter {
     address: string,
     contractAddress: string
   ): Promise<string> {
-    const contract = new ethers.Contract(
+    const contract = new Contract(
       contractAddress,
       ['function balanceOf(address) view returns (uint256)'],
       this.provider
@@ -215,7 +215,7 @@ export class BalanceTracker extends EventEmitter {
     address: string,
     contractAddress: string
   ): Promise<{ balance: string; tokenIds?: string[] }> {
-    const contract = new ethers.Contract(
+    const contract = new Contract(
       contractAddress,
       [
         'function balanceOf(address) view returns (uint256)',
@@ -255,7 +255,7 @@ export class BalanceTracker extends EventEmitter {
     for (const balance of balances.values()) {
       const price = prices[balance.symbol];
       if (price) {
-        const amount = ethers.formatUnits(balance.balance, balance.decimals);
+        const amount = formatUnits(balance.balance, balance.decimals);
         balance.usdValue = parseFloat(amount) * price;
       }
     }

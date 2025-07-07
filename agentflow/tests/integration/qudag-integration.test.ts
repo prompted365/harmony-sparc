@@ -4,7 +4,7 @@
  */
 
 import request from 'supertest';
-import { Server } from '../../src/server';
+import { Server } from '../../api/server';
 
 describe('QuDAG System Integration Tests', () => {
   let server: Server;

@@ -215,7 +215,7 @@ export function rateLimitMiddleware(options: RateLimitOptions & {
   skipSuccessfulRequests?: boolean;
   skipFailedRequests?: boolean;
   onLimitReached?: (req: ApiRequest, res: Response) => void;
-} = {}) {
+} = {} as any) {
   const {
     windowMs = 60000, // 1 minute
     max = 100,
@@ -227,7 +227,7 @@ export function rateLimitMiddleware(options: RateLimitOptions & {
     onLimitReached
   } = options;
 
-  return (req: ApiRequest, res: Response, next: NextFunction) => {
+  return (req: ApiRequest, res: Response, next: NextFunction): void => {
     const key = keyGenerator(req);
     
     let rateLimitInfo: RateLimitInfo;
@@ -263,7 +263,7 @@ export function rateLimitMiddleware(options: RateLimitOptions & {
         onLimitReached(req, res);
       }
 
-      return res.status(429).json({
+      res.status(429).json({
         success: false,
         error: {
           code: ApiErrorCode.RATE_LIMITED,
@@ -276,6 +276,7 @@ export function rateLimitMiddleware(options: RateLimitOptions & {
           }
         }
       } as ApiResponse);
+      return;
     }
 
     // Handle skip conditions
@@ -365,7 +366,7 @@ export function progressiveRateLimit() {
   return rateLimitMiddleware({
     windowMs: 60000,
     max: 100,
-    onLimitReached: (req: ApiRequest, res: Response) => {
+    onLimitReached: (req: ApiRequest, _res: Response) => {
       const key = defaultKeyGenerator(req);
       const currentPenalty = penalties.get(key) || 1;
       penalties.set(key, currentPenalty * 2);

@@ -39,7 +39,7 @@ export class PaymentAPI {
     
     try {
       // Rate limiting
-      if (!this.checkRateLimit(req.ip)) {
+      if (!this.checkRateLimit(req.ip || 'unknown')) {
         res.status(429).json({
           error: ERROR_CODES.RATE_LIMIT_EXCEEDED,
           message: 'Rate limit exceeded'

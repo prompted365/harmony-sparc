@@ -1,7 +1,7 @@
 // Secure key management with encryption and quantum-resistant options
 
 import * as crypto from 'crypto';
-import { ethers } from 'ethers';
+import { ethers, HDNodeWallet, Mnemonic, Wallet, toBeHex } from 'ethers';
 import { KeyPair, EncryptedWallet, WalletRecovery, SecurityConfig } from './types';
 import { EventEmitter } from 'events';
 
@@ -28,17 +28,17 @@ export class KeyManager extends EventEmitter {
   async generateWallet(entropy?: string): Promise<{
     mnemonic: string;
     seed: string;
-    rootKey: ethers.HDNodeWallet;
+    rootKey: HDNodeWallet;
   }> {
     try {
       // Generate mnemonic
       const mnemonic = entropy 
-        ? ethers.Mnemonic.fromEntropy(entropy)
-        : ethers.Wallet.createRandom().mnemonic!;
+        ? Mnemonic.fromEntropy(entropy)
+        : Wallet.createRandom().mnemonic!;
       
       // Create HD wallet from mnemonic
-      const rootKey = ethers.HDNodeWallet.fromPhrase(mnemonic.phrase);
-      const seed = ethers.toBeHex(mnemonic.computeSeed());
+      const rootKey = HDNodeWallet.fromPhrase(mnemonic.phrase);
+      const seed = toBeHex(mnemonic.computeSeed());
 
       this.emit('wallet:generated', { address: rootKey.address });
 
@@ -56,7 +56,7 @@ export class KeyManager extends EventEmitter {
   /**
    * Derive a key pair from HD wallet
    */
-  deriveKeyPair(rootKey: ethers.HDNodeWallet, derivationPath: string): KeyPair {
+  deriveKeyPair(rootKey: HDNodeWallet, derivationPath: string): KeyPair {
     const derived = rootKey.derivePath(derivationPath);
     return {
       publicKey: derived.publicKey,
@@ -90,7 +90,7 @@ export class KeyManager extends EventEmitter {
       cipher.final()
     ]);
     
-    const authTag = cipher.getAuthTag();
+    const authTag = (cipher as any).getAuthTag();
 
     return {
       encrypted: encrypted.toString('hex'),
@@ -122,7 +122,7 @@ export class KeyManager extends EventEmitter {
       );
       
       // Set auth tag
-      decipher.setAuthTag(Buffer.from(authTag, 'hex'));
+      (decipher as any).setAuthTag(Buffer.from(authTag, 'hex'));
       
       // Decrypt
       const decrypted = Buffer.concat([
@@ -171,16 +171,16 @@ export class KeyManager extends EventEmitter {
    * Import wallet from various formats
    */
   async importWallet(recovery: WalletRecovery, password: string): Promise<EncryptedWallet> {
-    let rootKey: ethers.HDNodeWallet;
+    let rootKey: HDNodeWallet;
     
     if (recovery.mnemonic) {
-      rootKey = ethers.HDNodeWallet.fromPhrase(recovery.mnemonic);
+      rootKey = HDNodeWallet.fromPhrase(recovery.mnemonic);
     } else if (recovery.privateKey) {
-      const wallet = new ethers.Wallet(recovery.privateKey);
-      rootKey = ethers.HDNodeWallet.fromSeed(wallet.privateKey);
+      const wallet = new Wallet(recovery.privateKey);
+      rootKey = HDNodeWallet.fromSeed(wallet.privateKey);
     } else if (recovery.keystore) {
-      const wallet = await ethers.Wallet.fromEncryptedJson(recovery.keystore, password);
-      rootKey = ethers.HDNodeWallet.fromSeed(wallet.privateKey);
+      const wallet = await Wallet.fromEncryptedJson(recovery.keystore, password);
+      rootKey = HDNodeWallet.fromSeed(wallet.privateKey);
     } else {
       throw new Error('No valid recovery method provided');
     }
@@ -221,7 +221,7 @@ export class KeyManager extends EventEmitter {
       encryptedWallet.authTag
     );
 
-    const wallet = new ethers.Wallet(seed);
+    const wallet = new Wallet(seed);
 
     switch (format) {
       case 'privateKey':

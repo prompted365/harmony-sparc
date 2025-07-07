@@ -10,9 +10,7 @@ async function basicExample() {
   console.log('🚀 Starting AgentFlow API Server...');
   
   const server = createApiServer({
-    port: 3000,
-    host: 'localhost',
-    enableSwagger: true
+    port: 3000
   });
 
   try {
@@ -114,15 +112,7 @@ async function customExample() {
   
   const server = createApiServer({
     port: 8080,
-    host: '0.0.0.0',
-    corsOrigins: ['https://app.agentflow.ai', 'https://dashboard.agentflow.ai'],
-    enableAuth: true,
-    enableRateLimit: true,
-    enableCache: true,
-    enableMetrics: true,
-    enableSwagger: false, // Disabled in this example
-    maxRequestSize: '5mb',
-    trustProxy: true
+    corsOrigins: ['https://app.agentflow.ai', 'https://dashboard.agentflow.ai']
   });
 
   // Event listeners

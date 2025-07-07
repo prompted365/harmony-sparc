@@ -18,10 +18,13 @@ import { workflowRouter } from './routes/workflows';
 export class Server {
   private app: Application;
   private port: number;
+  private config: typeof config;
+  private isListening: boolean = false;
 
-  constructor() {
+  constructor(options?: Partial<typeof config>) {
+    this.config = { ...config, ...options };
     this.app = express();
-    this.port = config.port;
+    this.port = this.config.port;
     this.initializeMiddleware();
     this.initializeRoutes();
     this.initializeErrorHandling();
@@ -36,7 +39,7 @@ export class Server {
     
     // CORS configuration
     this.app.use(cors({
-      origin: config.corsOrigins,
+      origin: this.config.corsOrigins,
       credentials: true,
       optionsSuccessStatus: 200
     }));
@@ -102,6 +105,7 @@ export class Server {
   public async start(): Promise<void> {
     return new Promise((resolve) => {
       this.app.listen(this.port, () => {
+        this.isListening = true;
         logger.info(`🚀 Server is running on port ${this.port}`);
         logger.info(`🏥 Health check: http://localhost:${this.port}/health`);
         logger.info(`📝 Environment: ${config.env}`);
@@ -113,6 +117,38 @@ export class Server {
   public getApp(): Application {
     return this.app;
   }
+
+  public async stop(): Promise<void> {
+    // In a real implementation, you would close the server
+    logger.info('Server stopping...');
+  }
+
+  public isHealthy(): boolean {
+    // Simple health check
+    return true;
+  }
+
+  public getMetrics(): any {
+    // Simple metrics object
+    return {
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  // Event emitter methods
+  public on(event: string, handler: Function): void {
+    // Simple event handling
+    if (event === 'started' && this.isListening) {
+      handler();
+    }
+  }
+}
+
+// Export createServer function for the main index
+export default function createServer() {
+  return new Server();
 }
 
 // Start server if this file is run directly

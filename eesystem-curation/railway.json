@@ -1,0 +1,113 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "./Dockerfile"
+  },
+  "deploy": {
+    "startCommand": "npm run start:prod",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "NODE_ENV": "production",
+        "PORT": "${{ PORT }}",
+        "DATABASE_URL": "${{ DATABASE_URL }}",
+        "REDIS_URL": "${{ REDIS_URL }}",
+        "ALLOWED_ORIGINS": "${{ ALLOWED_ORIGINS }}",
+        "JWT_SECRET": "${{ JWT_SECRET }}",
+        "ASTRA_DB_APPLICATION_TOKEN": "${{ ASTRA_DB_APPLICATION_TOKEN }}",
+        "ASTRA_DB_ID": "${{ ASTRA_DB_ID }}",
+        "ASTRA_DB_REGION": "${{ ASTRA_DB_REGION }}",
+        "ASTRA_DB_KEYSPACE": "${{ ASTRA_DB_KEYSPACE }}",
+        "OPENAI_API_KEY": "${{ OPENAI_API_KEY }}",
+        "SENTRY_DSN": "${{ SENTRY_DSN }}",
+        "LOG_LEVEL": "info"
+      }
+    },
+    "staging": {
+      "variables": {
+        "NODE_ENV": "staging",
+        "PORT": "${{ PORT }}",
+        "DATABASE_URL": "${{ DATABASE_URL }}",
+        "REDIS_URL": "${{ REDIS_URL }}",
+        "ALLOWED_ORIGINS": "${{ ALLOWED_ORIGINS }}",
+        "JWT_SECRET": "${{ JWT_SECRET }}",
+        "ASTRA_DB_APPLICATION_TOKEN": "${{ ASTRA_DB_APPLICATION_TOKEN }}",
+        "ASTRA_DB_ID": "${{ ASTRA_DB_ID }}",
+        "ASTRA_DB_REGION": "${{ ASTRA_DB_REGION }}",
+        "ASTRA_DB_KEYSPACE": "${{ ASTRA_DB_KEYSPACE }}",
+        "OPENAI_API_KEY": "${{ OPENAI_API_KEY }}",
+        "LOG_LEVEL": "debug"
+      }
+    }
+  },
+  "services": {
+    "backend": {
+      "source": {
+        "type": "dockerfile",
+        "dockerfilePath": "./backend/Dockerfile.prod"
+      },
+      "variables": {
+        "PORT": 8000,
+        "PYTHONPATH": "/app",
+        "ENVIRONMENT": "production"
+      },
+      "domains": [
+        {
+          "domain": "api.eesystem-curation.railway.app"
+        }
+      ],
+      "healthcheck": {
+        "path": "/health",
+        "interval": 30,
+        "timeout": 10,
+        "retries": 3
+      }
+    },
+    "frontend": {
+      "source": {
+        "type": "dockerfile",
+        "dockerfilePath": "./frontend/Dockerfile.prod"
+      },
+      "variables": {
+        "PORT": 3000,
+        "VITE_API_URL": "https://api.eesystem-curation.railway.app"
+      },
+      "domains": [
+        {
+          "domain": "eesystem-curation.railway.app"
+        }
+      ]
+    },
+    "redis": {
+      "source": {
+        "type": "docker",
+        "image": "redis:7-alpine"
+      },
+      "variables": {
+        "REDIS_PASSWORD": "${{ REDIS_PASSWORD }}"
+      },
+      "volumes": [
+        {
+          "mountPath": "/data",
+          "name": "redis-data"
+        }
+      ]
+    }
+  },
+  "plugins": [
+    {
+      "name": "redis",
+      "plan": "hobby"
+    },
+    {
+      "name": "postgresql",
+      "plan": "hobby"
+    }
+  ]
+}

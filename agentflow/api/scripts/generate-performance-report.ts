@@ -143,7 +143,8 @@ class PerformanceReportGenerator {
           const data = JSON.parse(fs.readFileSync(filePath, 'utf8'));
           this.processTestData(data, fileName);
         } catch (error) {
-          console.warn(`Warning: Could not load ${fileName}:`, error.message);
+          const err = error instanceof Error ? error : new Error(String(error));
+          console.warn(`Warning: Could not load ${fileName}:`, err.message);
         }
       }
     }

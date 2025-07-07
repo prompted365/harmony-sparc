@@ -219,7 +219,8 @@ class BottleneckAnalyzer {
     } catch (error) {
       const endTime = performance.now();
       measurements.push(endTime - startTime);
-      errors.push({ error: error.message });
+      const err = error instanceof Error ? error : new Error(String(error));
+      errors.push({ error: err.message });
     }
   }
 

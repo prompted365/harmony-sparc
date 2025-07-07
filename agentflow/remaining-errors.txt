@@ -1,0 +1,57 @@
+adapters/qudag/examples/agentflow-integration.ts(143,63): error TS2345: Argument of type '{ type: any; amount: any; price: number; timestamp: number; }' is not assignable to parameter of type 'ResourceOrder'.
+adapters/qudag/examples/usage.ts(128,57): error TS2345: Argument of type '{ type: ResourceType; amount: number; price: number; timestamp: number; }' is not assignable to parameter of type 'ResourceOrder'.
+adapters/qudag/examples/usage.ts(144,61): error TS2345: Argument of type '{ type: ResourceType; amount: number; price: number; timestamp: number; }' is not assignable to parameter of type 'ResourceOrder'.
+api/index.ts(12,58): error TS2304: Cannot find name 'config'.
+api/index.ts(13,14): error TS2304: Cannot find name 'Server'.
+api/index.ts(13,26): error TS2304: Cannot find name 'config'.
+api/index.ts(17,14): error TS2304: Cannot find name 'Server'.
+api/index.ts(18,8): error TS2304: Cannot find name 'config'.
+api/index.ts(27,14): error TS2304: Cannot find name 'Server'.
+api/index.ts(28,8): error TS2304: Cannot find name 'config'.
+api/routes/workflows.ts(68,36): error TS2345: Argument of type 'WorkflowRegistry' is not assignable to parameter of type 'EventBus'.
+api/server.ts(141,41): error TS2551: Property 'listening' does not exist on type 'Application'. Did you mean 'listen'?
+core/finance/fees/fee-distributor.ts(69,11): error TS2564: Property 'distributionStats' has no initializer and is not definitely assigned in the constructor.
+core/finance/fees/fee-distributor.ts(70,11): error TS2564: Property 'stakingPool' has no initializer and is not definitely assigned in the constructor.
+core/finance/fees/fee-engine.test.ts(480,77): error TS2345: Argument of type '{ id: string; from: string; to: string; amount: bigint; token: string; priority: string; timestamp: number; }' is not assignable to parameter of type 'PaymentRequest'.
+core/finance/fees/fee-engine.test.ts(501,77): error TS2345: Argument of type '{ id: string; from: string; to: string; amount: bigint; token: string; priority: string; timestamp: number; }' is not assignable to parameter of type 'PaymentRequest'.
+core/finance/fees/fee-engine.ts(69,11): error TS2564: Property 'analytics' has no initializer and is not definitely assigned in the constructor.
+core/finance/fees/fee-engine.ts(70,11): error TS2564: Property 'networkConditions' has no initializer and is not definitely assigned in the constructor.
+core/finance/payment/api/payment-api.ts(42,32): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+core/finance/payment/api/payment-routes.ts(59,11): error TS2564: Property 'paymentProcessor' has no initializer and is not definitely assigned in the constructor.
+core/finance/payment/api/payment-routes.ts(60,11): error TS2564: Property 'escrowManager' has no initializer and is not definitely assigned in the constructor.
+core/finance/payment/api/payment-routes.ts(61,11): error TS2564: Property 'webhookManager' has no initializer and is not definitely assigned in the constructor.
+core/finance/payment/api/payment-routes.ts(62,11): error TS2564: Property 'notificationService' has no initializer and is not definitely assigned in the constructor.
+core/finance/payment/api/payment-routes.ts(228,36): error TS2345: Argument of type 'Data' is not assignable to parameter of type 'string'.
+core/finance/payment/escrow/escrow-contract.ts(42,40): error TS2339: Property 'createEscrow' does not exist on type 'BaseContract'.
+core/finance/payment/escrow/escrow-contract.ts(73,40): error TS2339: Property 'releaseEscrow' does not exist on type 'BaseContract'.
+core/finance/payment/escrow/escrow-contract.ts(86,40): error TS2339: Property 'refundEscrow' does not exist on type 'BaseContract'.
+core/finance/payment/escrow/escrow-contract.ts(121,40): error TS2339: Property 'updateCondition' does not exist on type 'BaseContract'.
+core/finance/payment/escrow/escrow-contract.ts(165,7): error TS2322: Type 'BaseContract & { deploymentTransaction(): ContractTransactionResponse; } & Omit<BaseContract, keyof BaseContract>' is not assignable to type 'Contract'.
+core/finance/payment/fees/fee-calculator.ts(230,7): error TS2345: Argument of type 'bigint' is not assignable to parameter of type 'number'.
+core/finance/payment/payment-system.ts(172,7): error TS2322: Type '"degraded"' is not assignable to type '"healthy"'.
+core/finance/payment/payment-system.ts(176,7): error TS2322: Type '"degraded"' is not assignable to type '"healthy"'.
+core/finance/payment/processors/multi-token-processor.ts(7,63): error TS2305: Module '"ethers"' has no exported member 'parseGwei'.
+core/finance/payment/processors/multi-token-processor.ts(128,38): error TS2339: Property 'transfer' does not exist on type 'BaseContract'.
+core/finance/payment/processors/multi-token-processor.ts(176,46): error TS2339: Property 'transfer' does not exist on type 'BaseContract'.
+core/finance/payment/processors/multi-token-processor.ts(178,40): error TS2339: Property 'transfer' does not exist on type 'BaseContract'.
+core/finance/payment/processors/multi-token-processor.ts(264,42): error TS2339: Property 'transfer' does not exist on type 'BaseContract'.
+core/finance/payment/processors/multi-token-processor.ts(342,31): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ readonly ETH: "native"; readonly USDC: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"; readonly USDT: "0xdAC17F958D2ee523a2206206994597C13D831ec7"; readonly DAI: "0x6B175474E89094C44Da98b954EedeAC495271d0F"; readonly WETH: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; }'.
+core/finance/wallet/key-manager.ts(93,28): error TS2339: Property 'getAuthTag' does not exist on type 'Cipher'.
+core/finance/wallet/key-manager.ts(125,16): error TS2339: Property 'setAuthTag' does not exist on type 'Decipher'.
+core/finance/wallet/transaction-manager.ts(71,14): error TS18047: 'parsedTx.signature' is possibly 'null'.
+core/finance/wallet/transaction-manager.ts(72,14): error TS18047: 'parsedTx.signature' is possibly 'null'.
+core/finance/wallet/transaction-manager.ts(73,14): error TS18047: 'parsedTx.signature' is possibly 'null'.
+core/finance/wallet/transaction-manager.ts(330,7): error TS2322: Type 'number' is not assignable to type 'string'.
+core/workflows/events/event-bus.ts(56,35): error TS2359: The right-hand side of an 'instanceof' expression must be either of type 'any', a class, function, or other type assignable to the 'Function' interface type, or an object type with a 'Symbol.hasInstance' method.
+core/workflows/execution/execution-engine.ts(412,20): error TS7006: Parameter 'branchId' implicitly has an 'any' type.
+core/workflows/registry/workflow-registry.ts(409,19): error TS2339: Property 'workflow' does not exist on type 'WorkflowDefinition'.
+index.ts(18,1): error TS2308: Module './api' has already exported a member named 'ApiError'. Consider explicitly re-exporting to resolve the ambiguity.
+index.ts(18,1): error TS2308: Module './core/finance' has already exported a member named 'PaymentRequest'. Consider explicitly re-exporting to resolve the ambiguity.
+index.ts(18,1): error TS2308: Module './core/finance' has already exported a member named 'Transaction'. Consider explicitly re-exporting to resolve the ambiguity.
+index.ts(18,1): error TS2308: Module './core/workflows' has already exported a member named 'ExecutionOptions'. Consider explicitly re-exporting to resolve the ambiguity.
+index.ts(41,3): error TS2724: '"./adapters/qudag"' has no exported member named 'QudagAdapter'. Did you mean 'QuDAGAdapter'?
+index.ts(42,3): error TS2614: Module '"./adapters/qudag"' has no exported member 'CryptoManager'. Did you mean to use 'import CryptoManager from "./adapters/qudag"' instead?
+index.ts(43,3): error TS2614: Module '"./adapters/qudag"' has no exported member 'NetworkManager'. Did you mean to use 'import NetworkManager from "./adapters/qudag"' instead?
+index.ts(44,3): error TS2614: Module '"./adapters/qudag"' has no exported member 'DomainManager'. Did you mean to use 'import DomainManager from "./adapters/qudag"' instead?
+index.ts(45,3): error TS2614: Module '"./adapters/qudag"' has no exported member 'ExchangeManager'. Did you mean to use 'import ExchangeManager from "./adapters/qudag"' instead?
+index.ts(46,3): error TS2614: Module '"./adapters/qudag"' has no exported member 'RoutingManager'. Did you mean to use 'import RoutingManager from "./adapters/qudag"' instead?

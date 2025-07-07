@@ -1,0 +1,44 @@
+[build]
+builder = "nixpacks"
+buildCommand = "npm ci && npm run build"
+
+[deploy]
+startCommand = "npm start"
+healthcheckPath = "/health"
+healthcheckTimeout = 300
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+[env]
+NODE_ENV = "production"
+PORT = { default = "3000" }
+
+# AstraDB Configuration
+ASTRA_DB_DATABASE_ID = { default = "" }
+ASTRA_DB_REGION = { default = "" }
+ASTRA_DB_APPLICATION_TOKEN = { default = "" }
+ASTRA_DB_NAMESPACE = { default = "default" }
+ASTRA_DB_ENDPOINT = { default = "" }
+
+# Redis Configuration
+REDIS_URL = { default = "" }
+REDIS_TLS = { default = "true" }
+
+# Security Configuration
+JWT_SECRET = { default = "" }
+ENCRYPTION_KEY = { default = "" }
+API_RATE_LIMIT = { default = "100" }
+
+# Application Configuration
+VITE_API_URL = { default = "" }
+MAX_CONTENT_SIZE = { default = "10485760" }
+MAX_UPLOAD_SIZE = { default = "52428800" }
+
+# Monitoring Configuration
+ENABLE_METRICS = { default = "true" }
+LOG_LEVEL = { default = "info" }
+SENTRY_DSN = { default = "" }
+
+[networking]
+# Enable IPv6
+ipv6 = true

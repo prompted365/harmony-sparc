@@ -136,7 +136,8 @@ class AgentFlowQuDAGIntegration {
         type: req.type,
         amount: req.amount,
         price: this.calculateResourcePrice(req.type),
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        signature: Buffer.from('mock-signature') as Uint8Array
       };
 
       try {

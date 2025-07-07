@@ -263,7 +263,7 @@ export function batchAsyncHandler<T extends Request = ApiRequest, TItem = any>(
       
       batchResults.forEach(({ index, result, error }) => {
         if (error) {
-          errors.push(error);
+          errors.push(error instanceof Error ? error : new Error(String(error)));
         } else {
           results[index] = result;
         }

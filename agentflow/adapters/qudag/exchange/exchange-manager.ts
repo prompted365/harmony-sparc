@@ -6,7 +6,7 @@
 
 import { EventEmitter } from 'events';
 import * as crypto from 'crypto';
-import { ethers } from 'ethers';
+import { ethers, JsonRpcProvider, Wallet, Contract, formatEther, parseEther, parseUnits, TransactionResponse } from 'ethers';
 import {
   QuDAGConfig,
   ResourceOrder,
@@ -60,9 +60,9 @@ interface BlockchainTransaction {
   hash: string;
   from: string;
   to: string;
-  value: ethers.BigNumber;
-  gasLimit: ethers.BigNumber;
-  gasPrice: ethers.BigNumber;
+  value: bigint;
+  gasLimit: bigint;
+  gasPrice: bigint;
   nonce: number;
   data: string;
   signature?: {
@@ -93,7 +93,7 @@ interface AgentProfile {
   monthlyUsage: number;
   accountCreated: number;
   nonce: number;
-  ruvBalance: ethers.BigNumber;
+  ruvBalance: bigint;
   reputation: number;
 }
 
@@ -106,11 +106,11 @@ interface SmartContractAddresses {
 
 export class ExchangeManager extends EventEmitter {
   private config: QuDAGConfig;
-  private provider: ethers.providers.JsonRpcProvider | null = null;
-  private signer: ethers.Wallet | null = null;
-  private ruvTokenContract: ethers.Contract | null = null;
-  private exchangeContract: ethers.Contract | null = null;
-  private priceOracleContract: ethers.Contract | null = null;
+  private provider: JsonRpcProvider | null = null;
+  private signer: Wallet | null = null;
+  private ruvTokenContract: Contract | null = null;
+  private exchangeContract: Contract | null = null;
+  private priceOracleContract: Contract | null = null;
   private balances: Map<ResourceType, ResourceBalance> = new Map();
   private orders: Map<string, ResourceOrder> = new Map();
   private agentProfile: AgentProfile | null = null;
@@ -154,7 +154,7 @@ export class ExchangeManager extends EventEmitter {
       
       // Generate Ethereum wallet from quantum-resistant keys
       const ethPrivateKey = this.deriveEthereumPrivateKey(keys.signing.privateKey);
-      this.signer = new ethers.Wallet(ethPrivateKey, this.provider);
+      this.signer = new Wallet(ethPrivateKey, this.provider);
       
       // Create agent profile
       const address = await this.signer.getAddress();
@@ -183,7 +183,7 @@ export class ExchangeManager extends EventEmitter {
 
       logger.info('Exchange manager initialized', { 
         address,
-        ruvBalance: ethers.utils.formatEther(ruvBalance),
+        ruvBalance: formatEther(ruvBalance),
         resourceTypes: this.config.resourceTypes || Object.values(ResourceType)
       });
     } catch (error) {
@@ -203,7 +203,7 @@ export class ExchangeManager extends EventEmitter {
     try {
       // Connect to blockchain network
       const rpcUrl = process.env.BLOCKCHAIN_RPC_URL || 'http://localhost:8545';
-      this.provider = new ethers.providers.JsonRpcProvider(rpcUrl);
+      this.provider = new JsonRpcProvider(rpcUrl);
       
       // Test connection
       const network = await this.provider.getNetwork();
@@ -230,14 +230,14 @@ export class ExchangeManager extends EventEmitter {
     
     try {
       // Initialize rUv token contract
-      this.ruvTokenContract = new ethers.Contract(
+      this.ruvTokenContract = new Contract(
         this.contractAddresses.ruvToken,
         RUV_TOKEN_ABI,
         this.signer
       );
       
       // Initialize exchange contract
-      this.exchangeContract = new ethers.Contract(
+      this.exchangeContract = new Contract(
         this.contractAddresses.exchange,
         EXCHANGE_CONTRACT_ABI,
         this.signer
@@ -271,16 +271,16 @@ export class ExchangeManager extends EventEmitter {
   /**
    * Get rUv token balance
    */
-  private async getRuvBalance(address: string): Promise<ethers.BigNumber> {
+  private async getRuvBalance(address: string): Promise<bigint> {
     if (!this.ruvTokenContract) {
-      return ethers.BigNumber.from(0);
+      return 0n;
     }
     
     try {
       return await this.ruvTokenContract.balanceOf(address);
     } catch (error) {
       logger.error('Failed to get rUv balance', error);
-      return ethers.BigNumber.from(0);
+      return 0n;
     }
   }
 
@@ -325,19 +325,19 @@ export class ExchangeManager extends EventEmitter {
     setInterval(async () => {
       try {
         const newBalance = await this.getRuvBalance(this.agentProfile!.address);
-        if (!newBalance.eq(this.agentProfile!.ruvBalance)) {
+        if (newBalance !== this.agentProfile!.ruvBalance) {
           const oldBalance = this.agentProfile!.ruvBalance;
           this.agentProfile!.ruvBalance = newBalance;
           
           logger.info('rUv balance changed', {
-            from: ethers.utils.formatEther(oldBalance),
-            to: ethers.utils.formatEther(newBalance)
+            from: formatEther(oldBalance),
+            to: formatEther(newBalance)
           });
           
           this.emit('balanceChanged', {
             token: 'rUv',
-            oldBalance: ethers.utils.formatEther(oldBalance),
-            newBalance: ethers.utils.formatEther(newBalance)
+            oldBalance: formatEther(oldBalance),
+            newBalance: formatEther(newBalance)
           });
         }
       } catch (error) {
@@ -470,10 +470,10 @@ export class ExchangeManager extends EventEmitter {
       // Calculate fees including gas costs
       const fee = this.calculateFee(order.amount * order.price);
       const gasEstimate = await this.estimateGas(order);
-      const totalCost = ethers.utils.parseEther((order.amount * order.price + fee).toString());
+      const totalCost = parseEther((order.amount * order.price + fee).toString());
       
       // Check sufficient rUv balance
-      if (this.agentProfile.ruvBalance.lt(totalCost)) {
+      if (this.agentProfile.ruvBalance < totalCost) {
         throw new QuDAGError(
           'Insufficient rUv token balance',
           QuDAGErrorCode.INSUFFICIENT_RESOURCES
@@ -499,7 +499,7 @@ export class ExchangeManager extends EventEmitter {
       this.orders.set(order.id, {
         ...order,
         status: OrderStatus.FILLED,
-        txHash: receipt.transactionHash
+        txHash: receipt ? receipt.hash : ''
       });
       
       // Update balances
@@ -511,13 +511,13 @@ export class ExchangeManager extends EventEmitter {
 
       const result: ResourceExchangeResult = {
         orderId: order.id,
-        txHash: receipt.transactionHash,
+        txHash: receipt ? receipt.hash : '',
         status: OrderStatus.FILLED,
         filledAmount: order.amount,
         remainingAmount: 0,
         averagePrice: order.price,
-        gasUsed: receipt.gasUsed.toNumber(),
-        blockNumber: receipt.blockNumber
+        gasUsed: receipt ? (typeof receipt.gasUsed === 'bigint' ? Number(receipt.gasUsed) : receipt.gasUsed) : 0,
+        blockNumber: receipt ? receipt.blockNumber : 0
       };
 
       // Emit event
@@ -525,12 +525,12 @@ export class ExchangeManager extends EventEmitter {
 
       logger.info('Order submitted to blockchain', {
         orderId: order.id,
-        txHash: receipt.transactionHash,
+        txHash: receipt ? receipt.hash : '',
         type: order.type,
         amount: order.amount,
         price: order.price,
         fee,
-        gasUsed: receipt.gasUsed.toNumber()
+        gasUsed: receipt ? (typeof receipt.gasUsed === 'bigint' ? Number(receipt.gasUsed) : receipt.gasUsed) : 0
       });
 
       return result;
@@ -553,14 +553,14 @@ export class ExchangeManager extends EventEmitter {
   /**
    * Create order on blockchain
    */
-  private async createOrderOnChain(order: ResourceOrder, gasEstimate: ethers.BigNumber): Promise<ethers.ContractTransaction> {
+  private async createOrderOnChain(order: ResourceOrder, gasEstimate: bigint): Promise<TransactionResponse> {
     if (!this.exchangeContract) {
       throw new Error('Exchange contract not initialized');
     }
     
     const resourceTypeIndex = Object.values(ResourceType).indexOf(order.type);
-    const amountBN = ethers.BigNumber.from(order.amount);
-    const priceBN = ethers.utils.parseEther(order.price.toString());
+    const amountBN = BigInt(order.amount);
+    const priceBN = parseEther(order.price.toString());
     
     // Create order on exchange contract
     const tx = await this.exchangeContract.createOrder(
@@ -569,7 +569,7 @@ export class ExchangeManager extends EventEmitter {
       priceBN,
       {
         gasLimit: gasEstimate,
-        gasPrice: ethers.utils.parseUnits(GAS_PRICE_GWEI.toString(), 'gwei')
+        gasPrice: parseUnits(GAS_PRICE_GWEI.toString(), 'gwei')
       }
     );
     
@@ -579,27 +579,27 @@ export class ExchangeManager extends EventEmitter {
   /**
    * Estimate gas for order transaction
    */
-  private async estimateGas(order: ResourceOrder): Promise<ethers.BigNumber> {
+  private async estimateGas(order: ResourceOrder): Promise<bigint> {
     if (!this.exchangeContract) {
-      return ethers.BigNumber.from(GAS_LIMIT);
+      return BigInt(GAS_LIMIT);
     }
     
     try {
       const resourceTypeIndex = Object.values(ResourceType).indexOf(order.type);
-      const amountBN = ethers.BigNumber.from(order.amount);
-      const priceBN = ethers.utils.parseEther(order.price.toString());
+      const amountBN = BigInt(order.amount);
+      const priceBN = parseEther(order.price.toString());
       
-      const gasEstimate = await this.exchangeContract.estimateGas.createOrder(
+      const gasEstimate = await this.exchangeContract.createOrder.estimateGas(
         resourceTypeIndex,
         amountBN,
         priceBN
       );
       
       // Add safety margin
-      return gasEstimate.mul(Math.floor(this.feeModel.gasMultiplier * 100)).div(100);
+      return gasEstimate * BigInt(Math.floor(this.feeModel.gasMultiplier * 100)) / 100n;
     } catch (error) {
       logger.warn('Gas estimation failed, using default', error);
-      return ethers.BigNumber.from(GAS_LIMIT);
+      return BigInt(GAS_LIMIT);
     }
   }
 
@@ -618,7 +618,7 @@ export class ExchangeManager extends EventEmitter {
         resourceTypeIndex
       );
       
-      return balance.toNumber();
+      return Number(balance);
     } catch (error) {
       logger.error('Failed to get on-chain resource balance', error);
       return 0;
@@ -853,10 +853,10 @@ export class ExchangeManager extends EventEmitter {
     }
     
     try {
-      const amountBN = ethers.utils.parseEther(amount);
+      const amountBN = parseEther(amount);
       
       // Check balance
-      if (this.agentProfile.ruvBalance.lt(amountBN)) {
+      if (this.agentProfile.ruvBalance < amountBN) {
         throw new QuDAGError(
           'Insufficient rUv balance',
           QuDAGErrorCode.INSUFFICIENT_RESOURCES
@@ -868,15 +868,15 @@ export class ExchangeManager extends EventEmitter {
       const receipt = await tx.wait();
       
       // Update balance
-      this.agentProfile.ruvBalance = this.agentProfile.ruvBalance.sub(amountBN);
+      this.agentProfile.ruvBalance = this.agentProfile.ruvBalance - amountBN;
       
       logger.info('rUv transfer completed', {
         to,
         amount,
-        txHash: receipt.transactionHash
+        txHash: receipt ? receipt.hash : ''
       });
       
-      return receipt.transactionHash;
+      return receipt.hash;
     } catch (error) {
       logger.error('rUv transfer failed', error);
       throw new QuDAGError(
@@ -900,7 +900,7 @@ export class ExchangeManager extends EventEmitter {
     
     try {
       const resourceTypeIndex = Object.values(ResourceType).indexOf(type);
-      const amountBN = ethers.BigNumber.from(amount);
+      const amountBN = BigInt(amount);
       
       const tx = await this.exchangeContract.depositResource(
         resourceTypeIndex,
@@ -918,10 +918,10 @@ export class ExchangeManager extends EventEmitter {
       logger.info('Resource deposited', {
         type,
         amount,
-        txHash: receipt.transactionHash
+        txHash: receipt ? receipt.hash : ''
       });
       
-      return receipt.transactionHash;
+      return receipt.hash;
     } catch (error) {
       logger.error('Resource deposit failed', error);
       throw new QuDAGError(
@@ -945,7 +945,7 @@ export class ExchangeManager extends EventEmitter {
     
     try {
       const resourceTypeIndex = Object.values(ResourceType).indexOf(type);
-      const amountBN = ethers.BigNumber.from(amount);
+      const amountBN = BigInt(amount);
       
       const tx = await this.exchangeContract.withdrawResource(
         resourceTypeIndex,
@@ -963,10 +963,10 @@ export class ExchangeManager extends EventEmitter {
       logger.info('Resource withdrawn', {
         type,
         amount,
-        txHash: receipt.transactionHash
+        txHash: receipt ? receipt.hash : ''
       });
       
-      return receipt.transactionHash;
+      return receipt.hash;
     } catch (error) {
       logger.error('Resource withdrawal failed', error);
       throw new QuDAGError(
@@ -997,13 +997,13 @@ export class ExchangeManager extends EventEmitter {
         to: tx.to || '',
         value: tx.value,
         gasLimit: tx.gasLimit,
-        gasPrice: tx.gasPrice || ethers.BigNumber.from(0),
+        gasPrice: tx.gasPrice || 0n,
         nonce: tx.nonce,
         data: tx.data,
-        signature: tx.r && tx.s && tx.v ? {
-          r: tx.r,
-          s: tx.s,
-          v: tx.v
+        signature: tx.signature ? {
+          r: tx.signature.r,
+          s: tx.signature.s,
+          v: tx.signature.v
         } : undefined
       };
     } catch (error) {
@@ -1015,16 +1015,17 @@ export class ExchangeManager extends EventEmitter {
   /**
    * Get current gas price
    */
-  async getCurrentGasPrice(): Promise<ethers.BigNumber> {
+  async getCurrentGasPrice(): Promise<bigint> {
     if (!this.provider) {
-      return ethers.utils.parseUnits(GAS_PRICE_GWEI.toString(), 'gwei');
+      return parseUnits(GAS_PRICE_GWEI.toString(), 'gwei');
     }
     
     try {
-      return await this.provider.getGasPrice();
+      const feeData = await this.provider.getFeeData();
+      return feeData.gasPrice || parseUnits(GAS_PRICE_GWEI.toString(), 'gwei');
     } catch (error) {
       logger.error('Failed to get gas price', error);
-      return ethers.utils.parseUnits(GAS_PRICE_GWEI.toString(), 'gwei');
+      return parseUnits(GAS_PRICE_GWEI.toString(), 'gwei');
     }
   }
 
@@ -1055,7 +1056,7 @@ export class ExchangeManager extends EventEmitter {
       agentVerified: this.agentProfile?.verified || false,
       monthlyUsage: this.agentProfile?.monthlyUsage || 0,
       resourceTypes: Array.from(this.balances.keys()),
-      ruvBalance: this.agentProfile ? ethers.utils.formatEther(this.agentProfile.ruvBalance) : '0',
+      ruvBalance: this.agentProfile ? formatEther(this.agentProfile.ruvBalance) : '0',
       agentAddress: this.agentProfile?.address,
       contractAddresses: this.contractAddresses,
       blockchainConnected: !!this.provider,
@@ -1078,7 +1079,7 @@ export class ExchangeManager extends EventEmitter {
     if (!this.agentProfile) {
       return '0';
     }
-    return ethers.utils.formatEther(this.agentProfile.ruvBalance);
+    return formatEther(this.agentProfile.ruvBalance);
   }
 
   /**

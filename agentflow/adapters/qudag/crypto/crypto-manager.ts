@@ -322,7 +322,7 @@ export class CryptoManager {
     const challenge = this.computeChallenge(messageHash, randomness);
     
     // Compute response z = r + c*s (simplified)
-    const response = this.computeResponse(randomness, challenge, s1);
+    const response = this.computeResponse(randomness, challenge, Buffer.from(s1));
     
     // Create signature
     const signature = new Uint8Array(ML_DSA_65_SIGNATURE_SIZE);

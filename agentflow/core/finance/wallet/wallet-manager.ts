@@ -1,6 +1,6 @@
 // Multi-asset wallet manager - Main orchestrator
 
-import { ethers } from 'ethers';
+import { ethers, Provider, Wallet } from 'ethers';
 import { EventEmitter } from 'events';
 import {
   WalletConfig,
@@ -23,12 +23,12 @@ export class WalletManager extends EventEmitter {
   private keyManager: KeyManager;
   private transactionManager: TransactionManager;
   private balanceTracker: BalanceTracker;
-  private provider: ethers.Provider;
+  private provider: Provider;
   private securityConfig: SecurityConfig;
   private eventHistory: WalletEvent[] = [];
 
   constructor(
-    provider: ethers.Provider,
+    provider: Provider,
     securityConfig: Partial<SecurityConfig> = {}
   ) {
     super();
@@ -152,7 +152,7 @@ export class WalletManager extends EventEmitter {
       wallet.authTag
     );
 
-    const ethersWallet = new ethers.Wallet(privateKey);
+    const ethersWallet = new Wallet(privateKey);
     return ethersWallet.address;
   }
 

@@ -103,7 +103,8 @@ class IntegrationTestRunner {
           const results = JSON.parse(stdout.split('\n').find(line => line.startsWith('{')) || '{}');
           resolve(results);
         } catch (parseError) {
-          reject(new Error(`Failed to parse test results: ${parseError.message}`));
+          const err = parseError instanceof Error ? parseError : new Error(String(parseError));
+          reject(new Error(`Failed to parse test results: ${err.message}`));
         }
       });
     });

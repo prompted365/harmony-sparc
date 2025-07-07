@@ -53,7 +53,7 @@ export class EventBus extends EventEmitter {
     const handlerId = `handler_${++this.handlerCounter}`;
     const eventHandler: EventHandler = {
       id: handlerId,
-      pattern: pattern instanceof WorkflowEventType ? pattern : pattern,
+      pattern: typeof pattern === 'string' ? pattern : pattern,
       handler,
       options
     };

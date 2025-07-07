@@ -6,7 +6,7 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { ethers } from 'ethers';
+import { ethers, verifyMessage } from 'ethers';
 import { ApiRequest, AuthUser, ApiResponse, ApiErrorCode } from '../types';
 
 interface JWTPayload {
@@ -132,7 +132,7 @@ class AuthManager {
 
   verifySignature(message: string, signature: string, address: string): boolean {
     try {
-      const recoveredAddress = ethers.verifyMessage(message, signature);
+      const recoveredAddress = verifyMessage(message, signature);
       return recoveredAddress.toLowerCase() === address.toLowerCase();
     } catch (error) {
       return false;

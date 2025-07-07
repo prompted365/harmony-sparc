@@ -1,0 +1,53 @@
+# FastAPI Core
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Database
+sqlalchemy==2.0.23
+alembic==1.13.1
+aiosqlite==0.19.0
+cassandra-driver==3.29.0
+astrapy==0.7.0
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+bcrypt==4.1.2
+
+# Background Tasks
+celery==5.3.4
+redis==5.0.1
+flower==2.0.1
+
+# HTTP Client
+httpx==0.25.2
+aiofiles==23.2.1
+
+# AI/ML Integration
+openai==1.3.8
+anthropic==0.7.7
+tiktoken==0.5.2
+
+# Monitoring & Logging
+prometheus-client==0.19.0
+structlog==23.2.0
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+pytest-cov==4.1.0
+httpx==0.25.2
+factory-boy==3.3.0
+
+# Development
+pre-commit==3.6.0
+black==23.12.0
+isort==5.13.2
+flake8==6.1.0
+mypy==1.7.1
+
+# Production
+gunicorn==21.2.0

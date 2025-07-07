@@ -1,0 +1,78 @@
+{
+  "name": "eesystem-curation",
+  "version": "1.0.0",
+  "description": "EESystem Content Curation Platform",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && python -m pip install -r requirements.txt",
+    "build:prod": "npm run build:frontend:prod && npm run build:backend:prod",
+    "build:frontend:prod": "cd frontend && npm run build",
+    "build:backend:prod": "cd backend && python -m pip install -r requirements.prod.txt",
+    "start": "npm run start:backend",
+    "start:backend": "cd backend && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
+    "start:prod": "npm run start:backend:prod",
+    "start:backend:prod": "cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4",
+    "test": "npm run test:frontend && npm run test:backend",
+    "test:frontend": "cd frontend && npm test",
+    "test:backend": "cd backend && python -m pytest",
+    "test:coverage": "npm run test:frontend:coverage && npm run test:backend:coverage",
+    "test:frontend:coverage": "cd frontend && npm run test:coverage",
+    "test:backend:coverage": "cd backend && python -m pytest --cov=app --cov-report=html",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:backend": "cd backend && python -m flake8 app/",
+    "lint:fix": "npm run lint:frontend:fix && npm run lint:backend:fix",
+    "lint:frontend:fix": "cd frontend && npm run lint -- --fix",
+    "lint:backend:fix": "cd backend && python -m black app/ && python -m isort app/",
+    "docker:dev": "docker-compose -f docker-compose.dev.yml up",
+    "docker:build": "docker-compose build",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up",
+    "docker:build:prod": "docker-compose -f docker-compose.prod.yml build",
+    "railway:deploy": "./railway-deploy.sh",
+    "railway:deploy:backend": "./railway-deploy.sh backend",
+    "railway:deploy:frontend": "./railway-deploy.sh frontend",
+    "railway:setup": "./railway-setup.sh",
+    "db:migrate": "cd backend && alembic upgrade head",
+    "db:migrate:create": "cd backend && alembic revision --autogenerate -m",
+    "db:reset": "cd backend && alembic downgrade base && alembic upgrade head",
+    "health:check": "curl -f http://localhost:8000/health && curl -f http://localhost:3000/health",
+    "setup": "npm install && cd frontend && npm install && cd ../backend && python -m pip install -r requirements.txt",
+    "setup:prod": "npm install && cd frontend && npm install && cd ../backend && python -m pip install -r requirements.prod.txt"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ],
+    "*.py": [
+      "flake8",
+      "black --check"
+    ]
+  },
+  "volta": {
+    "node": "20.17.0",
+    "npm": "10.8.2"
+  }
+}

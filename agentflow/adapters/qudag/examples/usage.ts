@@ -122,7 +122,8 @@ async function resourceTradingExample() {
       type: ResourceType.CPU,
       amount: 50,  // 50 vCPU-hours
       price: 0.1,  // 0.1 rUv per vCPU-hour
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      signature: Buffer.from('mock-signature') as Uint8Array
     };
 
     const cpuResult = await adapter.createResourceOrder(cpuOrder);
@@ -138,7 +139,8 @@ async function resourceTradingExample() {
       type: ResourceType.STORAGE,
       amount: 100, // 100 GB
       price: 0.05, // 0.05 rUv per GB
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      signature: Buffer.from('mock-signature') as Uint8Array
     };
 
     const storageResult = await adapter.createResourceOrder(storageOrder);

@@ -5,7 +5,7 @@
 
 import { Response, NextFunction } from 'express';
 import { z, ZodError, ZodSchema } from 'zod';
-import { ApiRequest, ApiResponse, ApiErrorCode } from '../types';
+import { ApiRequest, ApiResponse, ApiErrorCode } from '../types/index';
 
 interface ValidationOptions {
   body?: ZodSchema;
@@ -27,13 +27,13 @@ function formatZodError(error: ZodError): ValidationErrorDetail[] {
     field: err.path.join('.'),
     message: err.message,
     code: err.code,
-    received: 'received' in err ? err.received : undefined,
-    expected: 'expected' in err ? err.expected : undefined
-  }));
+    received: 'received' in err ? (err as any).received : undefined,
+    expected: 'expected' in err ? (err as any).expected : undefined
+  })) as ValidationErrorDetail[];
 }
 
 export function validateRequest(schemas: ValidationOptions) {
-  return (req: ApiRequest, res: Response, next: NextFunction) => {
+  return (req: ApiRequest, res: Response, next: NextFunction): void => {
     const errors: ValidationErrorDetail[] = [];
 
     try {
@@ -83,7 +83,7 @@ export function validateRequest(schemas: ValidationOptions) {
 
       // If there are validation errors, return them
       if (errors.length > 0) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           error: {
             code: ApiErrorCode.INVALID_REQUEST,
@@ -99,6 +99,7 @@ export function validateRequest(schemas: ValidationOptions) {
             requestId: req.requestId!
           }
         } as ApiResponse);
+        return;
       }
 
       next();
@@ -287,14 +288,15 @@ export function createPaymentSchema() {
 
 // Validation middleware with custom error handling
 export function validateWithCustomErrors(
-  schemas: ValidationOptions,
+  _schemas: ValidationOptions,
   customErrorHandler?: (errors: ValidationErrorDetail[]) => ApiResponse
 ) {
-  return (req: ApiRequest, res: Response, next: NextFunction) => {
+  return (req: ApiRequest, res: Response, next: NextFunction): void => {
     const errors: ValidationErrorDetail[] = [];
 
     // Perform validation (same logic as validateRequest)
     // ... validation logic here ...
+    // Note: This is a placeholder implementation
 
     if (errors.length > 0) {
       const response = customErrorHandler ? 
@@ -313,7 +315,8 @@ export function validateWithCustomErrors(
           }
         } as ApiResponse;
 
-      return res.status(400).json(response);
+      res.status(400).json(response);
+      return;
     }
 
     next();

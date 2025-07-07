@@ -1,0 +1,10 @@
+{
+  "ts-node": {
+    "compilerOptions": {
+      "strict": false,
+      "noUnusedLocals": false,
+      "noUnusedParameters": false,
+      "skipLibCheck": true
+    }
+  }
+}

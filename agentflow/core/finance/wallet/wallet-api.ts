@@ -2,7 +2,7 @@
 
 import { Request, Response } from 'express';
 import { WalletManager } from './wallet-manager';
-import { ethers } from 'ethers';
+import { ethers, Provider } from 'ethers';
 import {
   WalletConfig,
   WalletRecovery,
@@ -15,7 +15,7 @@ export class WalletAPI {
   private walletManager: WalletManager;
   private sessions: Map<string, { walletId: string; expires: Date }> = new Map();
 
-  constructor(provider: ethers.Provider, securityConfig?: Partial<SecurityConfig>) {
+  constructor(provider: Provider, securityConfig?: Partial<SecurityConfig>) {
     this.walletManager = new WalletManager(provider, securityConfig);
     this.setupEventHandlers();
   }
@@ -58,7 +58,8 @@ export class WalletAPI {
 
       res.status(201).json(response);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      const err = error instanceof Error ? error : new Error(String(error));
+      res.status(500).json({ error: err.message });
     }
   }
 
@@ -99,7 +100,8 @@ export class WalletAPI {
 
       res.status(201).json(response);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      const err = error instanceof Error ? error : new Error(String(error));
+      res.status(500).json({ error: err.message });
     }
   }
 
@@ -120,7 +122,8 @@ export class WalletAPI {
 
       res.json(response);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      const err = error instanceof Error ? error : new Error(String(error));
+      res.status(500).json({ error: err.message });
     }
   }
 
@@ -141,7 +144,8 @@ export class WalletAPI {
       const balances = await this.walletManager.getWalletBalances(id);
       res.json(balances);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      const err = error instanceof Error ? error : new Error(String(error));
+      res.status(500).json({ error: err.message });
     }
   }
 
@@ -180,7 +184,8 @@ export class WalletAPI {
         timestamp: result.timestamp
       });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      const err = error instanceof Error ? error : new Error(String(error));
+      res.status(500).json({ error: err.message });
     }
   }
 
@@ -206,7 +211,8 @@ export class WalletAPI {
 
       res.json(transactions);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      const err = error instanceof Error ? error : new Error(String(error));
+      res.status(500).json({ error: err.message });
     }
   }
 
@@ -227,7 +233,8 @@ export class WalletAPI {
       const stats = await this.walletManager.getWalletStats(id, password as string);
       res.json(stats);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      const err = error instanceof Error ? error : new Error(String(error));
+      res.status(500).json({ error: err.message });
     }
   }
 
@@ -253,7 +260,8 @@ export class WalletAPI {
         exported: true
       });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      const err = error instanceof Error ? error : new Error(String(error));
+      res.status(500).json({ error: err.message });
     }
   }
 
@@ -275,7 +283,8 @@ export class WalletAPI {
       
       res.json({ removed: true });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      const err = error instanceof Error ? error : new Error(String(error));
+      res.status(500).json({ error: err.message });
     }
   }
 
@@ -297,7 +306,8 @@ export class WalletAPI {
       
       res.json({ address });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      const err = error instanceof Error ? error : new Error(String(error));
+      res.status(500).json({ error: err.message });
     }
   }
 
@@ -343,7 +353,8 @@ export class WalletAPI {
       
       res.json({ destroyed: true });
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      const err = error instanceof Error ? error : new Error(String(error));
+      res.status(500).json({ error: err.message });
     }
   }
 
@@ -356,7 +367,8 @@ export class WalletAPI {
       const health = this.walletManager.getHealthStatus();
       res.json(health);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      const err = error instanceof Error ? error : new Error(String(error));
+      res.status(500).json({ error: err.message });
     }
   }
 
@@ -383,7 +395,8 @@ export class WalletAPI {
 
       res.json(gasEstimate);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      const err = error instanceof Error ? error : new Error(String(error));
+      res.status(500).json({ error: err.message });
     }
   }
 
@@ -429,7 +442,8 @@ export class WalletAPI {
 
       res.json(tokens);
     } catch (error) {
-      res.status(500).json({ error: error.message });
+      const err = error instanceof Error ? error : new Error(String(error));
+      res.status(500).json({ error: err.message });
     }
   }
 

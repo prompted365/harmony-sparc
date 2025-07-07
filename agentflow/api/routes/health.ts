@@ -109,7 +109,7 @@ class HealthMonitor {
     };
   }
 
-  async checkService(name: string, url?: string): Promise<ServiceHealth> {
+  async checkService(name: string, _url?: string): Promise<ServiceHealth> {
     // Mock service health checks
     const isHealthy = Math.random() > 0.1; // 90% healthy
     const latency = isHealthy ? Math.random() * 100 + 10 : 0;
@@ -401,7 +401,7 @@ router.get('/services', asyncHandler(async (req: ApiRequest, res: Response) => {
  * GET /readiness
  * Readiness probe for Kubernetes
  */
-router.get('/readiness', asyncHandler(async (req: ApiRequest, res: Response) => {
+router.get('/readiness', asyncHandler(async (_req: ApiRequest, res: Response) => {
   healthMonitor.incrementRequest();
 
   const healthStatus = await healthMonitor.getHealthStatus();
@@ -417,7 +417,7 @@ router.get('/readiness', asyncHandler(async (req: ApiRequest, res: Response) => 
  * GET /liveness
  * Liveness probe for Kubernetes
  */
-router.get('/liveness', asyncHandler(async (req: ApiRequest, res: Response) => {
+router.get('/liveness', asyncHandler(async (_req: ApiRequest, res: Response) => {
   healthMonitor.incrementRequest();
 
   // Simple liveness check - server is running
@@ -432,15 +432,16 @@ router.get('/liveness', asyncHandler(async (req: ApiRequest, res: Response) => {
  * POST /reset-metrics
  * Reset metrics (for testing/debugging)
  */
-router.post('/reset-metrics', asyncHandler(async (req: ApiRequest, res: Response) => {
+router.post('/reset-metrics', asyncHandler(async (req: ApiRequest, res: Response): Promise<void> => {
   if (process.env.NODE_ENV === 'production') {
-    return res.status(403).json({
+    res.status(403).json({
       success: false,
       error: {
         code: 'FORBIDDEN',
         message: 'Metrics reset not allowed in production'
       }
     } as ApiResponse);
+    return;
   }
 
   healthMonitor.reset();

@@ -10,7 +10,6 @@ import {
   ApiResponse, 
   QuDAGStatus,
   ResourceExchangeRequest,
-  PaginationParams,
   ApiErrorCode 
 } from '../types';
 import { 
@@ -18,27 +17,21 @@ import {
   ResourceBalance,
   ResourceType,
   ResourceOrder,
-  OrderStatus,
   ResourceExchangeResult,
   QuDAGTransaction,
   HealthCheck,
   ConnectionStatus,
-  QuDAGEvent,
-  QuDAGEventType
+  QuDAGEvent
 } from '../../adapters/qudag/types';
 import { asyncHandler } from '../utils/async-handler';
 import { validateRequest } from '../middleware/validation';
+import { logger } from '../utils/logger';
 
 // Import the real QuDAG adapter
 import QuDAGAdapter from '../../adapters/qudag';
 
 // Create real QuDAG adapter instance
 class QuDAGRouteAdapter {
-  private config: QuDAGConfig;
-  private connected = false;
-  private peers = 0;
-  private latency = 0;
-  private darkDomainActive = false;
   private resources: Map<ResourceType, ResourceBalance> = new Map();
   private orders: Map<string, ResourceOrder> = new Map();
   private transactions: QuDAGTransaction[] = [];
@@ -52,80 +45,17 @@ class QuDAGRouteAdapter {
     await initializeQuDAGAdapter();
   }
 
-  private initializeResources(): void {
-    const resourceTypes = [
-      ResourceType.CPU,
-      ResourceType.STORAGE,
-      ResourceType.BANDWIDTH,
-      ResourceType.MODEL,
-      ResourceType.MEMORY
-    ];
 
-    resourceTypes.forEach(type => {
-      this.resources.set(type, {
-        type,
-        available: Math.floor(Math.random() * 1000) + 100,
-        allocated: Math.floor(Math.random() * 100),
-        unit: this.getResourceUnit(type)
-      });
-    });
-  }
 
-  private initializeMockData(): void {
-    // Simulate connection
-    this.connected = true;
-    this.peers = Math.floor(Math.random() * 50) + 10;
-    this.latency = Math.floor(Math.random() * 100) + 10;
-    this.darkDomainActive = Math.random() > 0.5;
-
-    // Generate mock transactions
-    for (let i = 0; i < 10; i++) {
-      this.transactions.push({
-        hash: `0x${Math.random().toString(16).substr(2, 64)}`,
-        from: `0x${Math.random().toString(16).substr(2, 40)}`,
-        to: `0x${Math.random().toString(16).substr(2, 40)}`,
-        value: Math.random() * 1000,
-        resourceType: this.getRandomResourceType(),
-        data: new Uint8Array(32),
-        signature: new Uint8Array(64),
-        timestamp: Date.now() - Math.random() * 24 * 60 * 60 * 1000,
-        confirmations: Math.floor(Math.random() * 10) + 1
-      });
-    }
-  }
-
-  private getResourceUnit(type: ResourceType): string {
-    switch (type) {
-      case ResourceType.CPU: return 'cores';
-      case ResourceType.STORAGE: return 'GB';
-      case ResourceType.BANDWIDTH: return 'Mbps';
-      case ResourceType.MODEL: return 'instances';
-      case ResourceType.MEMORY: return 'GB';
-      default: return 'units';
-    }
-  }
-
-  private getRandomResourceType(): ResourceType {
-    const types = Object.values(ResourceType);
-    return types[Math.floor(Math.random() * types.length)];
-  }
-
-  private generateOrderId(): string {
-    return `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
 
   async connect(): Promise<void> {
     // Simulate connection delay
     await new Promise(resolve => setTimeout(resolve, 100));
-    this.connected = true;
-    this.peers = Math.floor(Math.random() * 50) + 10;
-    this.latency = Math.floor(Math.random() * 100) + 10;
+    // Connection handled by real adapter
   }
 
   async disconnect(): Promise<void> {
-    this.connected = false;
-    this.peers = 0;
-    this.latency = 0;
+    // Disconnection handled by real adapter
   }
 
   async getStatus(): Promise<QuDAGStatus> {
@@ -158,7 +88,8 @@ class QuDAGRouteAdapter {
       type: request.resourceType as ResourceType,
       amount: request.amount,
       price: request.maxPrice || 0.01,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      signature: new Uint8Array(64) // Placeholder signature
     };
 
     return await realQuDAGAdapter.createResourceOrder(order);
@@ -289,8 +220,7 @@ router.get('/status', asyncHandler(async (req: ApiRequest, res: Response) => {
       timestamp: Date.now(),
       version: '2.0.0',
       requestId: req.requestId!,
-      quantumResistant: true,
-      realImplementation: true
+      quantumResistant: true
     }
   };
 
@@ -311,8 +241,7 @@ router.get('/health', asyncHandler(async (req: ApiRequest, res: Response) => {
       timestamp: Date.now(),
       version: '2.0.0',
       requestId: req.requestId!,
-      quantumResistant: true,
-      realImplementation: true
+      quantumResistant: true
     }
   };
 
@@ -333,8 +262,7 @@ router.get('/connection', asyncHandler(async (req: ApiRequest, res: Response) =>
       timestamp: Date.now(),
       version: '2.0.0',
       requestId: req.requestId!,
-      quantumResistant: true,
-      realImplementation: true
+      quantumResistant: true
     }
   };
 
@@ -360,8 +288,7 @@ router.post('/connect', asyncHandler(async (req: ApiRequest, res: Response) => {
         timestamp: Date.now(),
         version: '2.0.0',
         requestId: req.requestId!,
-        quantumResistant: true,
-        realImplementation: true
+        quantumResistant: true
       }
     };
 
@@ -392,8 +319,7 @@ router.post('/disconnect', asyncHandler(async (req: ApiRequest, res: Response) =
       timestamp: Date.now(),
       version: '2.0.0',
       requestId: req.requestId!,
-      quantumResistant: true,
-      realImplementation: true
+      quantumResistant: true
     }
   };
 
@@ -414,8 +340,7 @@ router.get('/resources', asyncHandler(async (req: ApiRequest, res: Response) => 
       timestamp: Date.now(),
       version: '2.0.0',
       requestId: req.requestId!,
-      quantumResistant: true,
-      realImplementation: true
+      quantumResistant: true
     }
   };
 
@@ -426,30 +351,32 @@ router.get('/resources', asyncHandler(async (req: ApiRequest, res: Response) => 
  * GET /resources/:type
  * Get specific resource balance
  */
-router.get('/resources/:type', asyncHandler(async (req: ApiRequest, res: Response) => {
+router.get('/resources/:type', asyncHandler(async (req: ApiRequest, res: Response): Promise<void> => {
   const { type } = req.params;
 
   if (!Object.values(ResourceType).includes(type as ResourceType)) {
-    return res.status(400).json({
+    res.status(400).json({
       success: false,
       error: {
         code: ApiErrorCode.INVALID_REQUEST,
         message: 'Invalid resource type'
       }
     } as ApiResponse);
+    return;
   }
 
   const resources = await qudagAdapter.getResourceBalances();
   const resource = resources.find(r => r.type === type);
   
   if (!resource) {
-    return res.status(404).json({
+    res.status(404).json({
       success: false,
       error: {
         code: ApiErrorCode.NOT_FOUND,
         message: `Resource ${type} not found`
       }
     } as ApiResponse);
+    return;
   }
 
   const response: ApiResponse<ResourceBalance> = {
@@ -459,8 +386,7 @@ router.get('/resources/:type', asyncHandler(async (req: ApiRequest, res: Respons
       timestamp: Date.now(),
       version: '2.0.0',
       requestId: req.requestId!,
-      quantumResistant: true,
-      realImplementation: true
+      quantumResistant: true
     }
   };
 
@@ -539,18 +465,19 @@ router.get('/orders',
  * GET /orders/:id
  * Get specific order
  */
-router.get('/orders/:id', asyncHandler(async (req: ApiRequest, res: Response) => {
+router.get('/orders/:id', asyncHandler(async (req: ApiRequest, res: Response): Promise<void> => {
   const { id } = req.params;
 
   const order = qudagAdapter.getOrder(id);
   if (!order) {
-    return res.status(404).json({
+    res.status(404).json({
       success: false,
       error: {
         code: ApiErrorCode.NOT_FOUND,
         message: `Order ${id} not found`
       }
     } as ApiResponse);
+    return;
   }
 
   const response: ApiResponse<ResourceOrder> = {
@@ -603,18 +530,19 @@ router.get('/transactions',
  * GET /transactions/:hash
  * Get specific transaction
  */
-router.get('/transactions/:hash', asyncHandler(async (req: ApiRequest, res: Response) => {
+router.get('/transactions/:hash', asyncHandler(async (req: ApiRequest, res: Response): Promise<void> => {
   const { hash } = req.params;
 
   const transaction = qudagAdapter.getTransaction(hash);
   if (!transaction) {
-    return res.status(404).json({
+    res.status(404).json({
       success: false,
       error: {
         code: ApiErrorCode.NOT_FOUND,
         message: `Transaction ${hash} not found`
       }
     } as ApiResponse);
+    return;
   }
 
   const response: ApiResponse<QuDAGTransaction> = {

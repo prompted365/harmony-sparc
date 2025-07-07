@@ -100,7 +100,7 @@ describe('Fee Engine System', () => {
         to: '0x0987654321098765432109876543210987654321',
         amount: BigInt('1000000000000000000'), // 1 ETH
         token: 'ETH',
-        priority: 'normal',
+        priority: 'normal' as const,
         timestamp: Date.now()
       };
 
@@ -125,7 +125,7 @@ describe('Fee Engine System', () => {
         to: '0x0987654321098765432109876543210987654321',
         amount: BigInt('100000000000000000'), // 0.1 ETH
         token: 'ETH',
-        priority: 'normal',
+        priority: 'normal' as const,
         timestamp: Date.now()
       }));
 
@@ -449,7 +449,7 @@ describe('Fee Engine System', () => {
         to: '0x0987654321098765432109876543210987654321',
         amount: BigInt('1000000000000000000'), // 1 ETH
         token: 'ETH',
-        priority: 'normal',
+        priority: 'normal' as const,
         timestamp: Date.now()
       };
 
@@ -472,7 +472,7 @@ describe('Fee Engine System', () => {
         to: '0x0987654321098765432109876543210987654321',
         amount: BigInt('100000000000000000'), // 0.1 ETH
         token: 'ETH',
-        priority: 'normal',
+        priority: 'normal' as const,
         timestamp: Date.now()
       }));
 
@@ -494,7 +494,7 @@ describe('Fee Engine System', () => {
         to: '0x0987654321098765432109876543210987654321',
         amount: BigInt('100000000000000000'), // 0.1 ETH
         token: 'ETH',
-        priority: 'normal',
+        priority: 'normal' as const,
         timestamp: Date.now()
       }));
 

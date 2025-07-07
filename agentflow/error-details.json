@@ -1,0 +1,102 @@
+{
+  "summary": {
+    "total_errors": 155,
+    "categories": {
+      "ethers_v6_compatibility": 28,
+      "import_module_resolution": 15,
+      "property_type_mismatch": 47,
+      "unknown_type_errors": 18,
+      "uninitialized_properties": 11,
+      "api_method_not_found": 25,
+      "type_conversion": 11
+    }
+  },
+  "priority_fixes": [
+    {
+      "priority": 1,
+      "category": "ethers_v6_compatibility",
+      "description": "Fix all ethers v6 breaking changes",
+      "error_count": 28,
+      "key_issues": [
+        "TransactionReceipt.transactionHash -> hash",
+        "TransactionResponse missing r,s,v properties",
+        "provider.getGasPrice() removed",
+        "parseGwei import location changed",
+        "bigint.toNumber() -> Number(bigint)",
+        "Contract method call syntax changed"
+      ]
+    },
+    {
+      "priority": 2,
+      "category": "import_module_resolution",
+      "description": "Fix missing exports and module paths",
+      "error_count": 15,
+      "key_issues": [
+        "API server exports missing",
+        "QuDAG adapter export name mismatch",
+        "Module re-export conflicts"
+      ]
+    },
+    {
+      "priority": 3,
+      "category": "api_method_not_found",
+      "description": "Implement missing API methods",
+      "error_count": 25,
+      "key_issues": [
+        "WorkflowRegistry methods missing",
+        "ExecutionEngine methods missing",
+        "Global logger not defined",
+        "WebSocket type not imported"
+      ]
+    },
+    {
+      "priority": 4,
+      "category": "property_type_mismatch",
+      "description": "Fix property mismatches and missing required fields",
+      "error_count": 47,
+      "key_issues": [
+        "ResourceOrder missing signature property",
+        "Wrong property names in various types",
+        "Missing required fields in interfaces"
+      ]
+    },
+    {
+      "priority": 5,
+      "category": "type_safety",
+      "description": "Handle unknown types and uninitialized properties",
+      "error_count": 29,
+      "key_issues": [
+        "Error handling with unknown types",
+        "Uninitialized class properties",
+        "Missing type assertions"
+      ]
+    }
+  ],
+  "files_by_error_density": [
+    {
+      "file": "api/routes/workflows.ts",
+      "errors": 20,
+      "categories": ["api_method_not_found", "property_type_mismatch"]
+    },
+    {
+      "file": "core/finance/wallet/wallet-api.ts",
+      "errors": 14,
+      "categories": ["unknown_type_errors"]
+    },
+    {
+      "file": "adapters/qudag/exchange/exchange-manager.ts",
+      "errors": 12,
+      "categories": ["ethers_v6_compatibility", "property_type_mismatch"]
+    },
+    {
+      "file": "api/routes/qudag.ts",
+      "errors": 9,
+      "categories": ["property_type_mismatch", "api_method_not_found"]
+    },
+    {
+      "file": "index.ts",
+      "errors": 9,
+      "categories": ["import_module_resolution"]
+    }
+  ]
+}

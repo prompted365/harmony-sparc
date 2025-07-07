@@ -23,7 +23,8 @@ import {
   WorkflowDefinition, 
   WorkflowInstance, 
   WorkflowStatus,
-  ValidationResult 
+  ValidationResult,
+  WorkflowContext 
 } from '../../core/workflows/types';
 
 // Validation schemas
@@ -60,9 +61,11 @@ const paginationSchema = z.object({
 });
 
 // Initialize services
-const registry = new WorkflowRegistry();
+import { EventBus } from '../../core/workflows/events/event-bus';
+const eventBus = new EventBus();
+const registry = new WorkflowRegistry(eventBus);
 const validator = new WorkflowValidator();
-const engine = new ExecutionEngine(registry);
+const engine = new ExecutionEngine(eventBus, registry);
 
 // Create router
 const router = Router();
@@ -77,25 +80,22 @@ router.get('/',
     const { page, limit, sort, order } = req.query as any;
     const offset = (page - 1) * limit;
 
-    // Get workflows from registry
-    const workflows = registry.getAllWorkflows();
+    // Search workflows from registry
+    const searchResults = registry.search({
+      sortBy: sort as any,
+      sortOrder: order,
+      offset,
+      limit
+    });
     
-    // Apply sorting
-    if (sort) {
-      workflows.sort((a, b) => {
-        const aVal = a[sort as keyof WorkflowDefinition];
-        const bVal = b[sort as keyof WorkflowDefinition];
-        const comparison = aVal > bVal ? 1 : -1;
-        return order === 'desc' ? -comparison : comparison;
-      });
-    }
-
-    // Apply pagination
-    const paginatedWorkflows = workflows.slice(offset, offset + limit);
+    // Extract workflows from registry entries
+    const workflows = searchResults.map(entry => entry.workflow);
+    
+    // The workflows are already sorted and paginated by the search method
 
     const response: ApiResponse = {
       success: true,
-      data: paginatedWorkflows,
+      data: workflows,
       meta: {
         timestamp: Date.now(),
         version: '1.0.0',
@@ -120,7 +120,7 @@ router.get('/',
 router.get('/:id', asyncHandler(async (req: ApiRequest, res: Response) => {
   const { id } = req.params;
 
-  const workflow = registry.getWorkflow(id);
+  const workflow = registry.get(id);
   if (!workflow) {
     return res.status(404).json({
       success: false,
@@ -172,12 +172,13 @@ router.post('/',
       id: generateWorkflowId()
     } as WorkflowDefinition;
 
-    registry.registerWorkflow(workflowWithId);
+    await registry.register(workflowWithId);
 
     // Auto-start if requested
     let instance: WorkflowInstance | undefined;
     if (autoStart) {
-      instance = await engine.execute(workflowWithId.id, {});
+      const context: WorkflowContext = { variables: {} };
+      instance = await engine.execute(workflowWithId.id, context);
     }
 
     const response: ApiResponse = {
@@ -268,7 +269,7 @@ router.put('/:id',
 router.delete('/:id', asyncHandler(async (req: ApiRequest, res: Response) => {
   const { id } = req.params;
 
-  const workflow = registry.getWorkflow(id);
+  const workflow = registry.get(id);
   if (!workflow) {
     return res.status(404).json({
       success: false,
@@ -321,7 +322,7 @@ router.post('/:id/execute',
     const { input, options } = req.body as Omit<ExecuteWorkflowRequest, 'workflowId'>;
 
     // Check if workflow exists
-    const workflow = registry.getWorkflow(id);
+    const workflow = registry.get(id);
     if (!workflow) {
       return res.status(404).json({
         success: false,
@@ -333,7 +334,7 @@ router.post('/:id/execute',
     }
 
     // Execute workflow
-    const instance = await engine.execute(id, input || {}, {
+    const instance = await engine.execute(id, { variables: input || {} }, {
       timeout: options?.timeout,
       parallel: options?.priority === 'high'
     });
@@ -399,7 +400,7 @@ router.get('/:id/instances',
     const offset = (page - 1) * limit;
 
     // Check if workflow exists
-    const workflow = registry.getWorkflow(id);
+    const workflow = registry.get(id);
     if (!workflow) {
       return res.status(404).json({
         success: false,
@@ -444,7 +445,7 @@ router.get('/:id/instances',
 router.post('/:id/validate', asyncHandler(async (req: ApiRequest, res: Response) => {
   const { id } = req.params;
 
-  const workflow = registry.getWorkflow(id);
+  const workflow = registry.get(id);
   if (!workflow) {
     return res.status(404).json({
       success: false,

@@ -395,6 +395,41 @@ export class WorkflowRegistry {
   }
 
   /**
+   * Get all workflows (alias for compatibility)
+   */
+  getAllWorkflows(): WorkflowDefinition[] {
+    return Array.from(this.workflows.values()).map(entry => entry.workflow);
+  }
+
+  /**
+   * Get workflow by ID (alias for compatibility)
+   */
+  getWorkflow(id: string): WorkflowDefinition | undefined {
+    return this.get(id);
+  }
+
+  /**
+   * Register workflow (alias for compatibility)
+   */
+  async registerWorkflow(workflow: WorkflowDefinition): Promise<void> {
+    await this.register(workflow);
+  }
+
+  /**
+   * Update workflow (alias for compatibility)
+   */
+  async updateWorkflow(id: string, workflow: WorkflowDefinition): Promise<void> {
+    await this.update(id, workflow);
+  }
+
+  /**
+   * Unregister workflow (alias for compatibility)
+   */
+  async unregisterWorkflow(id: string): Promise<void> {
+    await this.delete(id);
+  }
+
+  /**
    * List workflows by category
    */
   listByCategory(category: string): RegistryEntry[] {

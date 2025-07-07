@@ -4,6 +4,7 @@
  */
 
 import express from 'express';
+import { WebSocket } from 'ws';
 import { PaymentAPI } from './payment-api';
 import { PaymentProcessor } from '../processors/payment-processor';
 import { EscrowManager } from '../escrow/escrow-manager';
@@ -55,10 +56,10 @@ export function createPaymentRoutes(
  */
 export class PaymentServer {
   private app: express.Application;
-  private paymentProcessor: PaymentProcessor;
-  private escrowManager: EscrowManager;
-  private webhookManager: WebhookManager;
-  private notificationService: NotificationService;
+  private paymentProcessor!: PaymentProcessor;
+  private escrowManager!: EscrowManager;
+  private webhookManager!: WebhookManager;
+  private notificationService!: NotificationService;
 
   constructor() {
     this.app = express();
@@ -224,7 +225,7 @@ export class PaymentWebSocketServer {
 
     socket.addEventListener('message', (event) => {
       try {
-        const message = JSON.parse(event.data);
+        const message = JSON.parse(typeof event.data === 'string' ? event.data : event.data.toString());
         this.handleMessage(channelId, message);
       } catch (error) {
         console.error('WebSocket message error:', error);

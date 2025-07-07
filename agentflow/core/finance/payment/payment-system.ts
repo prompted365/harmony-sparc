@@ -157,7 +157,7 @@ export class PaymentSystem {
   } {
     const metrics = this.getSystemMetrics();
     const health = {
-      status: 'healthy' as const,
+      status: 'healthy' as 'healthy' | 'degraded',
       components: {
         paymentProcessor: this.isRunning,
         escrowManager: true,

@@ -4,7 +4,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { ethers } from 'ethers';
+import { ethers, Provider, Wallet, Contract, JsonRpcProvider, TransactionResponse } from 'ethers';
 import { PaymentRequest, PaymentTransaction, PaymentStatus, PaymentConfig } from '../types';
 import { PAYMENT_CONSTANTS, ERROR_CODES } from '../constants';
 
@@ -17,9 +17,9 @@ const ERC20_ABI = [
 ];
 
 export class MultiTokenProcessor extends EventEmitter {
-  private provider: ethers.Provider;
-  private wallets: Map<string, ethers.Wallet> = new Map();
-  private tokenContracts: Map<string, ethers.Contract> = new Map();
+  private provider: Provider;
+  private wallets: Map<string, Wallet> = new Map();
+  private tokenContracts: Map<string, Contract> = new Map();
   private config: PaymentConfig;
   private nonces: Map<string, number> = new Map();
 
@@ -28,7 +28,7 @@ export class MultiTokenProcessor extends EventEmitter {
     this.config = config;
     
     // Initialize provider (would be configured based on environment)
-    this.provider = new ethers.JsonRpcProvider(process.env.RPC_URL || 'http://localhost:8545');
+    this.provider = new JsonRpcProvider(process.env.RPC_URL || 'http://localhost:8545');
     
     // Initialize token contracts
     this.initializeTokenContracts();
@@ -37,7 +37,7 @@ export class MultiTokenProcessor extends EventEmitter {
   /**
    * Process a payment for any supported token
    */
-  async processPayment(request: PaymentRequest, wallet: ethers.Wallet): Promise<PaymentTransaction> {
+  async processPayment(request: PaymentRequest, wallet: Wallet): Promise<PaymentTransaction> {
     try {
       // Validate token support
       if (!this.isTokenSupported(request.token)) {
@@ -71,7 +71,7 @@ export class MultiTokenProcessor extends EventEmitter {
    */
   async processBatchPayment(
     payments: PaymentRequest[],
-    wallet: ethers.Wallet
+    wallet: Wallet
   ): Promise<PaymentTransaction[]> {
     // Group payments by token
     const paymentsByToken = this.groupPaymentsByToken(payments);
@@ -115,7 +115,7 @@ export class MultiTokenProcessor extends EventEmitter {
   /**
    * Estimate gas for a payment
    */
-  async estimateGas(request: PaymentRequest, wallet: ethers.Wallet): Promise<bigint> {
+  async estimateGas(request: PaymentRequest, wallet: Wallet): Promise<bigint> {
     if (this.isNativeToken(request.token)) {
       const tx = {
         to: request.to,
@@ -125,13 +125,13 @@ export class MultiTokenProcessor extends EventEmitter {
     } else {
       const contract = this.getTokenContract(request.token);
       const connectedContract = contract.connect(wallet);
-      return await connectedContract.transfer.estimateGas(request.to, request.amount);
+      return await (connectedContract as any)['transfer'].estimateGas(request.to, request.amount);
     }
   }
 
   private async processNativePayment(
     request: PaymentRequest,
-    wallet: ethers.Wallet
+    wallet: Wallet
   ): Promise<PaymentTransaction> {
     const nonce = await this.getNextNonce(wallet.address);
     
@@ -141,7 +141,7 @@ export class MultiTokenProcessor extends EventEmitter {
       nonce,
       gasLimit: await this.estimateGas(request, wallet),
       maxFeePerGas: await this.getGasPrice(),
-      maxPriorityFeePerGas: ethers.parseGwei('2')
+      maxPriorityFeePerGas: ethers.parseUnits('2', 'gwei')
     };
 
     const sentTx = await wallet.sendTransaction(tx);
@@ -167,19 +167,19 @@ export class MultiTokenProcessor extends EventEmitter {
 
   private async processERC20Payment(
     request: PaymentRequest,
-    wallet: ethers.Wallet
+    wallet: Wallet
   ): Promise<PaymentTransaction> {
     const contract = this.getTokenContract(request.token);
     const connectedContract = contract.connect(wallet);
     const nonce = await this.getNextNonce(wallet.address);
 
-    const gasLimit = await connectedContract.transfer.estimateGas(request.to, request.amount);
+    const gasLimit = await (connectedContract as any)['transfer'].estimateGas(request.to, request.amount);
     
-    const tx = await connectedContract.transfer(request.to, request.amount, {
+    const tx = await (connectedContract as any)['transfer'](request.to, request.amount, {
       nonce,
       gasLimit: gasLimit * BigInt(120) / BigInt(100), // 20% buffer
       maxFeePerGas: await this.getGasPrice(),
-      maxPriorityFeePerGas: ethers.parseGwei('2')
+      maxPriorityFeePerGas: ethers.parseUnits('2', 'gwei')
     });
 
     const transaction: PaymentTransaction = {
@@ -203,7 +203,7 @@ export class MultiTokenProcessor extends EventEmitter {
 
   private async processNativeBatch(
     payments: PaymentRequest[],
-    wallet: ethers.Wallet
+    wallet: Wallet
   ): Promise<PaymentTransaction[]> {
     // For native tokens, we need to send individual transactions
     // but we can optimize by preparing them all at once
@@ -218,7 +218,7 @@ export class MultiTokenProcessor extends EventEmitter {
         nonce: baseNonce + i,
         gasLimit: BigInt(21000), // Standard transfer gas
         maxFeePerGas: await this.getGasPrice(),
-        maxPriorityFeePerGas: ethers.parseGwei('2')
+        maxPriorityFeePerGas: ethers.parseUnits('2', 'gwei')
       };
 
       const sentTx = await wallet.sendTransaction(tx);
@@ -248,7 +248,7 @@ export class MultiTokenProcessor extends EventEmitter {
 
   private async processERC20Batch(
     payments: PaymentRequest[],
-    wallet: ethers.Wallet,
+    wallet: Wallet,
     token: string
   ): Promise<PaymentTransaction[]> {
     // For ERC20 tokens, we could use a batch transfer contract
@@ -261,11 +261,11 @@ export class MultiTokenProcessor extends EventEmitter {
     for (let i = 0; i < payments.length; i++) {
       const payment = payments[i];
       
-      const tx = await connectedContract.transfer(payment.to, payment.amount, {
+      const tx = await (connectedContract as any)['transfer'](payment.to, payment.amount, {
         nonce: baseNonce + i,
         gasLimit: BigInt(65000), // Standard ERC20 transfer gas
         maxFeePerGas: await this.getGasPrice(),
-        maxPriorityFeePerGas: ethers.parseGwei('2')
+        maxPriorityFeePerGas: ethers.parseUnits('2', 'gwei')
       });
 
       const transaction: PaymentTransaction = {
@@ -292,7 +292,7 @@ export class MultiTokenProcessor extends EventEmitter {
   }
 
   private async waitForConfirmation(
-    tx: ethers.TransactionResponse,
+    tx: TransactionResponse,
     transaction: PaymentTransaction
   ): Promise<void> {
     try {
@@ -320,13 +320,13 @@ export class MultiTokenProcessor extends EventEmitter {
     // Initialize contracts for supported ERC20 tokens
     Object.entries(PAYMENT_CONSTANTS.SUPPORTED_TOKENS).forEach(([symbol, address]) => {
       if (address !== 'native') {
-        const contract = new ethers.Contract(address, ERC20_ABI, this.provider);
+        const contract = new Contract(address, ERC20_ABI, this.provider);
         this.tokenContracts.set(symbol, contract);
       }
     });
   }
 
-  private getTokenContract(token: string): ethers.Contract {
+  private getTokenContract(token: string): Contract {
     const contract = this.tokenContracts.get(token);
     if (!contract) {
       throw new Error(`Token contract not found for ${token}`);
@@ -339,7 +339,7 @@ export class MultiTokenProcessor extends EventEmitter {
   }
 
   private isNativeToken(token: string): boolean {
-    return token === 'ETH' || PAYMENT_CONSTANTS.SUPPORTED_TOKENS[token] === 'native';
+    return token === 'ETH' || (PAYMENT_CONSTANTS.SUPPORTED_TOKENS as any)[token] === 'native';
   }
 
   private groupPaymentsByToken(payments: PaymentRequest[]): Map<string, PaymentRequest[]> {
@@ -370,10 +370,10 @@ export class MultiTokenProcessor extends EventEmitter {
 
   private async getGasPrice(): Promise<bigint> {
     const feeData = await this.provider.getFeeData();
-    const gasPrice = feeData.maxFeePerGas || feeData.gasPrice || ethers.parseGwei('30');
+    const gasPrice = feeData.maxFeePerGas || feeData.gasPrice || ethers.parseUnits('30', 'gwei');
     
     // Apply max gas price limit
-    const maxGasPrice = ethers.parseGwei(PAYMENT_CONSTANTS.MAX_GAS_PRICE_GWEI.toString());
+    const maxGasPrice = ethers.parseUnits(PAYMENT_CONSTANTS.MAX_GAS_PRICE_GWEI.toString(), 'gwei');
     return gasPrice > maxGasPrice ? maxGasPrice : gasPrice;
   }
 }

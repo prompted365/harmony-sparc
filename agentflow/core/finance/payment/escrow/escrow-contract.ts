@@ -3,7 +3,7 @@
  * Handles on-chain escrow operations
  */
 
-import { ethers } from 'ethers';
+import { ethers, Contract, Provider, Wallet, ZeroHash, id, keccak256, AbiCoder, ContractFactory } from 'ethers';
 import { EscrowAccount, EscrowStatus } from '../types';
 
 // Escrow contract ABI
@@ -19,27 +19,27 @@ const ESCROW_ABI = [
 ];
 
 export class EscrowContract {
-  private contract: ethers.Contract;
-  private provider: ethers.Provider;
+  private contract: Contract;
+  private provider: Provider;
 
-  constructor(contractAddress: string, provider: ethers.Provider) {
+  constructor(contractAddress: string, provider: Provider) {
     this.provider = provider;
-    this.contract = new ethers.Contract(contractAddress, ESCROW_ABI, provider);
+    this.contract = new Contract(contractAddress, ESCROW_ABI, provider);
   }
 
   /**
    * Create escrow on-chain
    */
   async createEscrow(
-    wallet: ethers.Wallet,
+    wallet: Wallet,
     payee: string,
     amount: bigint,
     releaseTime: number,
-    conditionHash: string = ethers.ZeroHash
+    conditionHash: string = ZeroHash
   ): Promise<{ escrowId: number; transactionHash: string }> {
     const connectedContract = this.contract.connect(wallet);
     
-    const tx = await connectedContract.createEscrow(
+    const tx = await (connectedContract as any)['createEscrow'](
       payee,
       amount,
       releaseTime,
@@ -51,7 +51,7 @@ export class EscrowContract {
     
     // Parse escrow ID from logs
     const escrowCreatedEvent = receipt.logs.find(
-      (log: any) => log.topics[0] === ethers.id('EscrowCreated(uint256,address,address,uint256)')
+      (log: any) => log.topics[0] === id('EscrowCreated(uint256,address,address,uint256)')
     );
     
     const escrowId = escrowCreatedEvent ? parseInt(escrowCreatedEvent.topics[1], 16) : 0;
@@ -66,11 +66,11 @@ export class EscrowContract {
    * Release escrow funds
    */
   async releaseEscrow(
-    wallet: ethers.Wallet,
+    wallet: Wallet,
     escrowId: number
   ): Promise<string> {
     const connectedContract = this.contract.connect(wallet);
-    const tx = await connectedContract.releaseEscrow(escrowId);
+    const tx = await (connectedContract as any)['releaseEscrow'](escrowId);
     await tx.wait();
     return tx.hash;
   }
@@ -79,11 +79,11 @@ export class EscrowContract {
    * Refund escrow funds
    */
   async refundEscrow(
-    wallet: ethers.Wallet,
+    wallet: Wallet,
     escrowId: number
   ): Promise<string> {
     const connectedContract = this.contract.connect(wallet);
-    const tx = await connectedContract.refundEscrow(escrowId);
+    const tx = await (connectedContract as any)['refundEscrow'](escrowId);
     await tx.wait();
     return tx.hash;
   }
@@ -112,13 +112,13 @@ export class EscrowContract {
    * Update escrow condition
    */
   async updateCondition(
-    wallet: ethers.Wallet,
+    wallet: Wallet,
     escrowId: number,
     conditionHash: string,
     met: boolean
   ): Promise<string> {
     const connectedContract = this.contract.connect(wallet);
-    const tx = await connectedContract.updateCondition(escrowId, conditionHash, met);
+    const tx = await (connectedContract as any)['updateCondition'](escrowId, conditionHash, met);
     await tx.wait();
     return tx.hash;
   }
@@ -142,27 +142,27 @@ export class EscrowContract {
    * Generate condition hash
    */
   static generateConditionHash(conditions: Record<string, any>): string {
-    const encoder = new ethers.AbiCoder();
+    const encoder = new AbiCoder();
     const encoded = encoder.encode(
       ['string'],
       [JSON.stringify(conditions)]
     );
-    return ethers.keccak256(encoded);
+    return keccak256(encoded);
   }
 
   /**
    * Deploy escrow contract
    */
   static async deploy(
-    wallet: ethers.Wallet,
+    wallet: Wallet,
     contractBytecode: string
-  ): Promise<{ contract: ethers.Contract; address: string }> {
-    const factory = new ethers.ContractFactory(ESCROW_ABI, contractBytecode, wallet);
+  ): Promise<{ contract: Contract; address: string }> {
+    const factory = new ContractFactory(ESCROW_ABI, contractBytecode, wallet);
     const contract = await factory.deploy();
     await contract.waitForDeployment();
     
     return {
-      contract,
+      contract: contract as Contract,
       address: await contract.getAddress()
     };
   }
