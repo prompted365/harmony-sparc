@@ -29,7 +29,7 @@ START_TIME=$(date +%s)
 # Track overall results
 TOTAL_PASSED=0
 TOTAL_FAILED=0
-FAILED_SUITES=()
+FAILED_SUITES=""
 
 # Run test suite function
 run_suite() {
@@ -48,36 +48,44 @@ run_suite() {
         echo -e "${GREEN}✅ ${suite_name} PASSED${NC}"
         
         # Extract pass/fail counts from log
-        local passed=$(grep -c "✅ PASSED" "test-results/${suite_file%.sh}.log" || echo 0)
-        local failed=$(grep -c "❌ FAILED" "test-results/${suite_file%.sh}.log" || echo 0)
+        local passed=$(grep -c "✅ PASSED" "test-results/${suite_file%.sh}.log" 2>/dev/null || echo 0)
+        local failed=$(grep -c "❌ FAILED" "test-results/${suite_file%.sh}.log" 2>/dev/null || echo 0)
         
         TOTAL_PASSED=$((TOTAL_PASSED + passed))
         TOTAL_FAILED=$((TOTAL_FAILED + failed))
     else
         echo -e "${RED}❌ ${suite_name} FAILED${NC}"
         echo -e "${YELLOW}   Check test-results/${suite_file%.sh}.log for details${NC}"
-        FAILED_SUITES+=("$suite_name")
+        FAILED_SUITES="${FAILED_SUITES}${suite_name},"
         
         # Still try to extract counts
-        local passed=$(grep -c "✅ PASSED" "test-results/${suite_file%.sh}.log" || echo 0)
-        local failed=$(grep -c "❌ FAILED" "test-results/${suite_file%.sh}.log" || echo 0)
+        local passed=$(grep -c "✅ PASSED" "test-results/${suite_file%.sh}.log" 2>/dev/null || echo 0)
+        local failed=$(grep -c "❌ FAILED" "test-results/${suite_file%.sh}.log" 2>/dev/null || echo 0)
         
         TOTAL_PASSED=$((TOTAL_PASSED + passed))
         TOTAL_FAILED=$((TOTAL_FAILED + failed))
     fi
 }
 
-# Define test suites
-declare -A test_suites=(
-    ["Sandbox Security"]="test-sandbox.sh"
-    ["James Agent"]="test-james-agent.sh"
-    ["DAA Monitoring"]="test-daa-monitor.sh"
-    ["Integration"]="test-integration.sh"
+# Define test suites (using simple arrays to avoid bash version issues)
+test_suite_names=(
+    "Sandbox Security"
+    "James Agent"
+    "DAA Monitoring"
+    "Integration"
+)
+
+test_suite_files=(
+    "test-sandbox.sh"
+    "test-james-agent.sh"
+    "test-daa-monitor.sh"
+    "test-integration.sh"
 )
 
 # Check if individual test scripts exist
 echo -e "${YELLOW}Checking test scripts...${NC}"
-for suite_file in "${test_suites[@]}"; do
+for i in "${!test_suite_files[@]}"; do
+    suite_file="${test_suite_files[$i]}"
     if [[ ! -f "tests/$suite_file" ]]; then
         echo -e "${YELLOW}Warning: tests/$suite_file not found. Creating placeholder...${NC}"
         cat > "tests/$suite_file" << 'EOF'
@@ -91,8 +99,8 @@ done
 
 # Run each test suite
 echo -e "\n${GREEN}Starting test execution...${NC}"
-for suite_name in "${!test_suites[@]}"; do
-    run_suite "$suite_name" "${test_suites[$suite_name]}"
+for i in "${!test_suite_names[@]}"; do
+    run_suite "${test_suite_names[$i]}" "${test_suite_files[$i]}"
 done
 
 # Calculate test duration
@@ -100,6 +108,22 @@ END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 MINUTES=$((DURATION / 60))
 SECONDS=$((DURATION % 60))
+
+# Calculate pass rate safely
+TOTAL_TESTS=$((TOTAL_PASSED + TOTAL_FAILED))
+if [[ $TOTAL_TESTS -gt 0 ]]; then
+    PASS_RATE=$(echo "scale=2; ($TOTAL_PASSED * 100) / $TOTAL_TESTS" | bc 2>/dev/null || echo "0")
+else
+    PASS_RATE="0"
+fi
+
+# Format failed suites list
+FAILED_SUITES_JSON="[]"
+if [[ -n "$FAILED_SUITES" ]]; then
+    # Remove trailing comma and format as JSON array
+    FAILED_SUITES=${FAILED_SUITES%,}
+    FAILED_SUITES_JSON=$(echo "$FAILED_SUITES" | awk -F, '{printf "["; for(i=1;i<=NF;i++) printf "%s\"%s\"", (i>1?",":""), $i; printf "]"}')
+fi
 
 # Generate comprehensive test report
 echo -e "\n${YELLOW}Generating comprehensive test report...${NC}"
@@ -113,16 +137,16 @@ cat > test-results/test-report.json << EOF
     "total_seconds": $DURATION
   },
   "summary": {
-    "total_tests": $((TOTAL_PASSED + TOTAL_FAILED)),
+    "total_tests": $TOTAL_TESTS,
     "passed": $TOTAL_PASSED,
     "failed": $TOTAL_FAILED,
-    "pass_rate": $(echo "scale=2; ($TOTAL_PASSED / ($TOTAL_PASSED + $TOTAL_FAILED)) * 100" | bc || echo 0)
+    "pass_rate": $PASS_RATE
   },
-  "failed_suites": $(printf '%s\n' "${FAILED_SUITES[@]}" | jq -R . | jq -s . || echo '[]'),
+  "failed_suites": $FAILED_SUITES_JSON,
   "environment": {
-    "node_version": "$(node --version)",
-    "npm_version": "$(npm --version)",
-    "claude_flow_version": "$(npx claude-flow@alpha --version || echo 'unknown')"
+    "node_version": "$(node --version 2>/dev/null || echo 'not installed')",
+    "npm_version": "$(npm --version 2>/dev/null || echo 'not installed')",
+    "claude_flow_version": "$(npx claude-flow@alpha --version 2>/dev/null || echo 'not installed')"
   }
 }
 EOF
@@ -152,6 +176,7 @@ cat > test-results/test-report.html << EOF
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background: #f5f5f5; font-weight: bold; }
         .timestamp { color: #999; font-size: 14px; }
+        .warning { background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 4px; margin: 20px 0; }
     </style>
 </head>
 <body>
@@ -162,7 +187,7 @@ cat > test-results/test-report.html << EOF
         <div class="summary">
             <div class="metric">
                 <h3>Total Tests</h3>
-                <div class="value">$((TOTAL_PASSED + TOTAL_FAILED))</div>
+                <div class="value">$TOTAL_TESTS</div>
             </div>
             <div class="metric">
                 <h3>Passed</h3>
@@ -174,21 +199,35 @@ cat > test-results/test-report.html << EOF
             </div>
             <div class="metric">
                 <h3>Pass Rate</h3>
-                <div class="value">$(echo "scale=1; ($TOTAL_PASSED / ($TOTAL_PASSED + $TOTAL_FAILED)) * 100" | bc || echo 0)%</div>
+                <div class="value">${PASS_RATE}%</div>
             </div>
             <div class="metric">
                 <h3>Duration</h3>
                 <div class="value">${MINUTES}m ${SECONDS}s</div>
             </div>
         </div>
+EOF
+
+# Add warning if claude-flow is not installed
+if ! command -v npx &> /dev/null || ! npx claude-flow@alpha --version &> /dev/null 2>&1; then
+    cat >> test-results/test-report.html << EOF
+        <div class="warning">
+            <strong>⚠️ Warning:</strong> Claude Flow does not appear to be installed. 
+            These are development tests for features that may not be available yet.
+            Install with: <code>npm install -g claude-flow@alpha</code>
+        </div>
+EOF
+fi
+
+cat >> test-results/test-report.html << EOF
         
         <h2>Test Suites</h2>
 EOF
 
 # Add suite results to HTML
-for suite_name in "${!test_suites[@]}"; do
-    suite_file="${test_suites[$suite_name]}"
-    if [[ " ${FAILED_SUITES[@]} " =~ " ${suite_name} " ]]; then
+for i in "${!test_suite_names[@]}"; do
+    suite_name="${test_suite_names[$i]}"
+    if [[ "$FAILED_SUITES" == *"$suite_name"* ]]; then
         echo "<div class='suite failed'><strong>❌ $suite_name</strong> - Failed (see logs)</div>" >> test-results/test-report.html
     else
         echo "<div class='suite passed'><strong>✅ $suite_name</strong> - Passed</div>" >> test-results/test-report.html
@@ -200,9 +239,9 @@ cat >> test-results/test-report.html << EOF
         <h2>Environment</h2>
         <table>
             <tr><th>Component</th><th>Version</th></tr>
-            <tr><td>Node.js</td><td>$(node --version)</td></tr>
-            <tr><td>npm</td><td>$(npm --version)</td></tr>
-            <tr><td>Claude Flow</td><td>$(npx claude-flow@alpha --version || echo 'unknown')</td></tr>
+            <tr><td>Node.js</td><td>$(node --version 2>/dev/null || echo 'not installed')</td></tr>
+            <tr><td>npm</td><td>$(npm --version 2>/dev/null || echo 'not installed')</td></tr>
+            <tr><td>Claude Flow</td><td>$(npx claude-flow@alpha --version 2>/dev/null || echo 'not installed')</td></tr>
             <tr><td>Operating System</td><td>$(uname -s) $(uname -r)</td></tr>
         </table>
         
@@ -218,19 +257,26 @@ cat >> test-results/test-report.html << EOF
 </html>
 EOF
 
+# Count failed suites
+FAILED_COUNT=0
+if [[ -n "$FAILED_SUITES" && "$FAILED_SUITES" != "" ]]; then
+    FAILED_COUNT=$(echo "$FAILED_SUITES" | awk -F, '{print NF}')
+fi
+
 # Display summary
 echo -e "\n${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}Test Summary${NC}"
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "Total Tests: $((TOTAL_PASSED + TOTAL_FAILED))"
+echo -e "Total Tests: $TOTAL_TESTS"
 echo -e "Passed: ${GREEN}$TOTAL_PASSED${NC}"
 echo -e "Failed: ${RED}$TOTAL_FAILED${NC}"
+echo -e "Pass Rate: ${PASS_RATE}%"
 echo -e "Duration: ${MINUTES}m ${SECONDS}s"
 
-if [[ ${#FAILED_SUITES[@]} -gt 0 ]]; then
+if [[ $FAILED_COUNT -gt 0 ]]; then
     echo -e "\n${RED}Failed Suites:${NC}"
-    for suite in "${FAILED_SUITES[@]}"; do
-        echo -e "  - $suite"
+    echo "$FAILED_SUITES" | tr ',' '\n' | while read suite; do
+        [[ -n "$suite" ]] && echo -e "  - $suite"
     done
 fi
 
@@ -239,8 +285,13 @@ echo -e "  - JSON: test-results/test-report.json"
 echo -e "  - HTML: test-results/test-report.html"
 echo -e "  - Logs: test-results/*.log"
 
+# Check if this is a development environment
+if [[ "$CLAUDE_FLOW_ENV" == "test" ]]; then
+    echo -e "\n${YELLOW}Note: Running in test mode. Some commands may use mock implementations.${NC}"
+fi
+
 # Exit with appropriate code
-if [[ $TOTAL_FAILED -eq 0 && ${#FAILED_SUITES[@]} -eq 0 ]]; then
+if [[ $TOTAL_FAILED -eq 0 && $FAILED_COUNT -eq 0 ]]; then
     echo -e "\n${GREEN}🎉 All tests passed successfully!${NC}"
     exit 0
 else
